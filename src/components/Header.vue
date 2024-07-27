@@ -7,7 +7,7 @@ let { isShowInMobile, displayMobile } = defineProps(['isShowInMobile', 'displayM
 </script>
 
 <template>
-  <header class="hidden lg:flex justify-between items-center border-b w-full">
+  <header class="hidden md:flex justify-between items-center border-b w-full">
     <div class="flex items-center">
       <input
         type="search"
@@ -28,7 +28,7 @@ let { isShowInMobile, displayMobile } = defineProps(['isShowInMobile', 'displayM
       </button>
       <img :src="User" alt="" class="w-9 h-9 cursor-pointer" @click="dropdown = !dropdown" />
       <div
-        class="absolute border shadow-lg rounded-sm right-[5px] top-[71px] w-[13%]"
+        class="absolute border bg-0-PRIMARY_BLUE_LIGHT shadow-lg rounded-sm right-[5px] top-[71px] w-[13%] z-50"
         v-if="dropdown"
       >
         <div
@@ -52,30 +52,13 @@ let { isShowInMobile, displayMobile } = defineProps(['isShowInMobile', 'displayM
       </div>
     </div>
   </header>
-  <transition name="header">
-    <header
-      class="flex justify-between items-center p-2 border-b w-full lg:hidden"
-      v-if="!isShowInMobile"
-    >
-      <div><img :src="Logo" alt="" class="h-9 w-9" /></div>
-      <div>
-        <button @click="displayMobile"><v-icon icon="mdi-menu"></v-icon></button>
-      </div>
-    </header>
-  </transition>
+  <header
+    class="flex justify-between items-center p-2 border-b w-full md:hidden"
+    v-if="!isShowInMobile"
+  >
+    <div><img :src="Logo" alt="" class="h-9 w-9" /></div>
+    <div>
+      <button @click="displayMobile"><v-icon icon="mdi-menu"></v-icon></button>
+    </div>
+  </header>
 </template>
-
-<style scoped>
-.header-enter-active {
-  transition: all 0 0.1s ease-out;
-}
-
-.header-leave-active {
-  transition: all 0.5s 0.8s cubic-bezier(1, 0.5, 0.8, 1);
-}
-
-.header-enter-from,
-.header-leave-to {
-  opacity: 0;
-}
-</style>

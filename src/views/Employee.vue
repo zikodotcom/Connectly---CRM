@@ -4,9 +4,12 @@ import Table from '@/components/Employee/Table.vue'
 import axios from 'axios'
 import { onMounted, ref } from 'vue'
 import { validationRules } from '@/components/Employee/Validation'
+import { importCountrys } from '@/functions/countrys'
+import { getCookie } from '@/functions/getCookie'
 let data = ref(null)
 let dialog = ref(false)
 let items = ref([])
+let pageNumber = ref(0)
 const formData = ref({
   name: '',
   username: '',
@@ -21,32 +24,44 @@ const formData = ref({
   salary: ''
 })
 
-onMounted(() => {
+onMounted(async () => {
   display(1)
-  axios.get(`https://restcountries.com/v3.1/all?fields=name,flags`).then((res) => {
-    items.value = res.data
-      .map((el) => {
-        return {
-          image: el.flags.png,
-          name: el.name.common
-        }
-      })
-      .filter((el) => el.name !== 'Israel' && el.name !== 'Western Sahara') //TODO: Filter the country didn't exists
-      .sort((a, b) => {
-        if (a.name < b.name) {
-          return -1
-        }
-        if (a.name > b.name) {
-          return 1
-        }
-        return 0
-      })
-  })
+  items.value = await importCountrys()
 })
 // display data function
-const display = (page) => {
+const display = (page, isFilter, datas) => {
+  if (isFilter) filter(datas, page)
   axiosClient.get(`/employee?page=${page}`).then((res) => {
     data.value = res.data
+    pageNumber.value = res.data.last_page
+  })
+}
+// Filter data
+const filter = async (datas, page = 1) => {
+  await axiosClient.get('sanctum/csrf-cookie')
+  await axiosClient
+    .post(`/employee/filter?page=${page}`, datas, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
+      }
+    })
+    .then((res) => {
+      data.value = res.data
+      pageNumber.value = res.data.last_page
+    })
+}
+// Sort data
+const sort = (datas) => {
+  axiosClient.get(`/employee/sort/${datas.column}/${datas.directrion}`).then((res) => {
+    data.value = res.data
+  })
+}
+// Search data
+const search = (search) => {
+  axiosClient.get(`/employee/search/${search}`).then((res) => {
+    data.value = res.data
+    pageNumber.value = res.data.last_page
   })
 }
 </script>
@@ -64,7 +79,16 @@ const display = (page) => {
     </section>
   </div>
   <div class="bg-white m-4">
-    <Table :data="data" v-if="data" @page-changed="display" />
+    <Table
+      :data="data"
+      :pageNumber="pageNumber"
+      v-if="data"
+      @page-changed="display"
+      @filter-data="filter"
+      @sort-data="sort"
+      @search-data="search"
+      @pageChangedFilter="filter"
+    />
   </div>
   <!-- Modal add -->
   <v-dialog max-width="700" v-model="dialog">

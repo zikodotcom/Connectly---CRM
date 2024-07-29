@@ -2,6 +2,7 @@
 import bg from '@/assets/images/bg.jpeg'
 import logo from '@/assets/images/Logo.png'
 import { axiosClient } from '@/axiosClient'
+import { getCookie } from '@/functions/getCookie'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -21,8 +22,8 @@ const show1 = ref(false)
 const show2 = ref(true)
 const onSubmit = async (e) => {
   e.preventDefault()
-  console.log(form.value.validate())
   if (form.value.validate()) {
+    console.log(getCookie('XSRF-TOKEN'))
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
       .post('/login', user.value, {
@@ -44,15 +45,6 @@ const onSubmit = async (e) => {
         console.log(isAuth.value)
       })
   }
-}
-function getCookie(name) {
-  const cookie = document.cookie.split('; ').find((item) => item.startsWith(`${name}=`))
-
-  if (!cookie) {
-    return null
-  }
-
-  return decodeURIComponent(cookie.split('=')[1])
 }
 </script>
 

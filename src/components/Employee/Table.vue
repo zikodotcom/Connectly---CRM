@@ -2,6 +2,7 @@
 import { axiosClient } from '@/axiosClient'
 import { importCountrys } from '@/functions/countrys'
 import { onMounted, onUpdated, ref, watch } from 'vue'
+import Swal from 'sweetalert2'
 let { data, pageNumber } = defineProps(['data', 'pageNumber'])
 let localData = ref(data)
 const emit = defineEmits([
@@ -9,7 +10,10 @@ const emit = defineEmits([
   'filterData',
   'sortData',
   'searchData',
-  'pageChangedFilter'
+  'pageChangedFilter',
+  'reset',
+  'update',
+  'delete'
 ])
 let page = ref()
 let filter = ref({})
@@ -88,6 +92,30 @@ const sortFn = (column) => {
     directrion: sort.value.directrion == 'ASC' ? 'DESC' : 'ASC'
   }
   emit('sortData', sort.value)
+}
+// TODO: Delete function
+const deleteFn = (id) => {
+  const swalWithBootstrapButtons = Swal.mixin({
+    customClass: {
+      confirmButton: 'btn btn-success',
+      cancelButton: 'btn btn-danger'
+    },
+    buttonsStyling: false
+  })
+  swalWithBootstrapButtons
+    .fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'No, cancel!'
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        emit('delete', id)
+      }
+    })
 }
 // Watch if number changed or not
 watch(page, (newValue, oldValue) => {
@@ -230,7 +258,7 @@ watch(search, (newValue) => {
             <div class="flex justify-end p-2">
               <button
                 class="hover:bg-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE_LIGHT text-sm font-normal py-2 px-4 mr-2 rounded-full shadow-lg border mt-2 bg-0-PRIMARY_BLUE_LIGHT border-0-PRIMARY_BLUE text-0-PRIMARY_BLUE"
-                @click="dialog = false"
+                @click="emit('reset')"
               >
                 Reset
               </button>
@@ -294,12 +322,33 @@ watch(search, (newValue) => {
             class="odd:bg-white even:bg-gray-50 border-b transition-all ease-in-out"
             v-for="column in data.data"
           >
-            <td class="px-6 py-4 w-[16%]">{{ column.fullName }}</td>
+            <td class="px-6 py-4 w-[16%]">
+              <div class="flex justify-between w-full">
+                <img :src="column.photo" alt="" class="w-10 h-w-10 rounded-full mr-4" />
+                <span>{{ column.fullName }}</span>
+              </div>
+            </td>
             <td class="px-6 py-4 w-[16%]">{{ column.phone }}</td>
             <td class="px-6 py-4 w-[16%]">{{ column.email }}</td>
             <td class="px-6 py-4 w-[16%]">{{ column.country }}</td>
             <td class="px-6 py-4 w-[16%]">{{ column.role }}</td>
-            <td class="px-6 py-4">Delete</td>
+            <td class="px-6 py-4">
+              <v-menu transition="scale-transition" :close-on-content-click="false">
+                <template v-slot:activator="{ props }">
+                  <button class="border p-2 rounded-lg mr-2" v-bind="props">
+                    <v-icon icon="mdi-dots-vertical"></v-icon>
+                  </button>
+                </template>
+                <v-card>
+                  <div class="hover:bg-0-GREY_GREY_30">
+                    <button class="p-2 block" @click="emit('update', column.id_e)">Update</button>
+                  </div>
+                  <div class="hover:bg-0-GREY_GREY_30">
+                    <button class="p-2" @click="deleteFn(column.id_e)">Delete</button>
+                  </div>
+                </v-card>
+              </v-menu>
+            </td>
           </tr>
         </tbody>
         <tbody v-else>

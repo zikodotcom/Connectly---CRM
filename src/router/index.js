@@ -13,7 +13,7 @@ const router = createRouter({
       component: AdminLayouts,
       children: [
         {
-          path: '/dashboard',
+          path: '/',
           name: 'home',
           component: () => import('../views/Dashboard.vue'),
           meta: { layout: 'AdminLayouts' }

@@ -22,12 +22,12 @@ let countrySearch = ref('')
 let citySearch = ref('')
 let stateSearch = ref('')
 let roleSearch = ref('')
-let elementFilter = ['city', 'state', 'role']
+let elementFilter = ['industry', 'currency', 'languages', 'city', 'state']
 let isFilter = ref(false)
 let headList = [
   {
     name: 'Name',
-    key: 'fullName'
+    key: 'clientName'
   },
   {
     name: 'Phone',
@@ -42,8 +42,8 @@ let headList = [
     key: 'country'
   },
   {
-    name: 'Role',
-    key: 'role'
+    name: 'Owner',
+    key: 'owner'
   }
 ]
 let sort = ref({
@@ -53,7 +53,7 @@ let sort = ref({
 let search = ref('')
 let importDataFilter = (column) => {
   // Import city
-  axiosClient.get(`/employee/filter/${column}`).then((res) => {
+  axiosClient.get(`/client/filter/${column}`).then((res) => {
     filterData.value[column] = res.data
   })
 }
@@ -217,38 +217,18 @@ watch(search, (newValue) => {
                   </v-select>
                 </template>
               </v-list-item>
-              <v-list-item>
+              <v-list-item v-for="itemFilter in elementFilter">
                 <template v-slot="">
-                  <label>City</label>
+                  <label>{{ itemFilter }}</label>
 
-                  <v-select :items="filterData.city" variant="outlined" v-model="filter.city">
+                  <v-select
+                    :items="filterData[itemFilter]"
+                    variant="outlined"
+                    v-model="filter[itemFilter]"
+                  >
                     <template v-slot:prepend-item>
                       <v-select-items v-bind="props">
                         <v-text-field label="search" v-model="citySearch"></v-text-field>
-                      </v-select-items>
-                    </template>
-                  </v-select>
-                </template>
-              </v-list-item>
-              <v-list-item>
-                <template v-slot="">
-                  <label>State</label>
-                  <v-select :items="filterData.state" variant="outlined" v-model="filter.state">
-                    <template v-slot:prepend-item>
-                      <v-select-items v-bind="props">
-                        <v-text-field label="search" v-model="stateSearch"></v-text-field>
-                      </v-select-items>
-                    </template>
-                  </v-select>
-                </template>
-              </v-list-item>
-              <v-list-item>
-                <template v-slot="">
-                  <label>Role</label>
-                  <v-select :items="filterData.role" variant="outlined" v-model="filter.role">
-                    <template v-slot:prepend-item>
-                      <v-select-items v-bind="props">
-                        <v-text-field label="search" v-model="roleSearch"></v-text-field>
                       </v-select-items>
                     </template>
                   </v-select>
@@ -276,7 +256,7 @@ watch(search, (newValue) => {
     <div class="overflow-auto h-[calc(100%-56px)]">
       <!-- Adjust height to account for search and filter bars -->
       <table class="min-w-full text-sm text-left text-gray-500">
-        <thead class="text-xs text-gray-700 uppercase bg-gray-200 sticky top-0">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-200 sticky top-0 z-50">
           <tr>
             <th
               v-for="head in headList"
@@ -302,6 +282,7 @@ watch(search, (newValue) => {
                 ><v-icon icon="mdi-arrow-up"></v-icon
               ></span>
             </th>
+            <th scope="col" class="px-6 py-3 z-50">Contact</th>
             <th scope="col" class="px-6 py-3">Actions</th>
           </tr>
         </thead>
@@ -313,17 +294,34 @@ watch(search, (newValue) => {
             <td class="px-6 py-4 w-[16%]">
               <div class="flex items-center w-full">
                 <img
-                  :src="column.photo"
+                  :src="column.image"
                   alt=""
                   class="w-[40px] h-[40px] rounded-full mr-2 inline-block"
                 />
-                <span>{{ column.fullName }}</span>
+                <span>{{ column.clientName }}</span>
               </div>
             </td>
             <td class="px-6 py-4 w-[16%]">{{ column.phone }}</td>
             <td class="px-6 py-4 w-[16%]">{{ column.email }}</td>
             <td class="px-6 py-4 w-[16%]">{{ column.country }}</td>
-            <td class="px-6 py-4 w-[16%]">{{ column.role }}</td>
+            <td class="px-6 py-4 w-[16%]">{{ column.owner }}</td>
+            <td class="px-6 py-4 w-[16%]">
+              <a target="_blank" :href="column.facebook" class="text-0-PRIMARY_BLUE"
+                ><v-icon icon="mdi-facebook"></v-icon
+              ></a>
+              <a target="_blank" :href="column.twitter" class="text-[#1DA0F1]"
+                ><v-icon icon="mdi-twitter"></v-icon
+              ></a>
+              <a target="_blank" :href="column.instgram" class="text-[#D5447F]"
+                ><v-icon icon="mdi-instagram"></v-icon
+              ></a>
+              <a target="_blank" :href="column.linkedin" class="text-[#086B9C]"
+                ><v-icon icon="mdi-linkedin"></v-icon
+              ></a>
+              <a target="_blank" :href="`https://wa.me/${column.whatsapp}`" class="text-[#47E864]"
+                ><v-icon icon="mdi-whatsapp"></v-icon
+              ></a>
+            </td>
             <td class="px-6 py-4">
               <v-menu transition="scale-transition" :close-on-content-click="false">
                 <template v-slot:activator="{ props }">
@@ -333,10 +331,10 @@ watch(search, (newValue) => {
                 </template>
                 <v-card>
                   <div class="hover:bg-0-GREY_GREY_30">
-                    <button class="p-2 block" @click="emit('update', column.id_e)">Update</button>
+                    <button class="p-2 block" @click="emit('update', column.idC)">Update</button>
                   </div>
                   <div class="hover:bg-0-GREY_GREY_30">
-                    <button class="p-2" @click="deleteFn(column.id_e)">Delete</button>
+                    <button class="p-2" @click="deleteFn(column.idC)">Delete</button>
                   </div>
                 </v-card>
               </v-menu>

@@ -29,6 +29,12 @@ const router = createRouter({
           name: 'employee',
           component: () => import('../views/Employee.vue'),
           meta: { layout: 'AdminLayouts' }
+        },
+        {
+          path: '/client',
+          name: 'client',
+          component: () => import('../views/Client.vue'),
+          meta: { layout: 'AdminLayouts' }
         }
       ]
     }

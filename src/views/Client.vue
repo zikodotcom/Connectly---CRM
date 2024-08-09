@@ -1,23 +1,26 @@
 <script setup>
 import { axiosClient } from '@/axiosClient'
-import Table from '@/components/Employee/Table.vue'
+import Table from '@/components/Client/Table.vue'
 import { onMounted, ref } from 'vue'
-import { validationRules } from '@/components/Employee/Validation'
+import { validationRules } from '@/components/Client/Validation'
 import { importCountrys } from '@/functions/countrys'
 import { getCookie } from '@/functions/getCookie'
 import { useToast } from 'vue-toastification'
+import Loader from '@/components/Loader.vue'
 
 let data = ref(null)
 let dialog = ref(false)
 let dialogUpdate = ref(false)
 let items = ref([])
 let pageNumber = ref(0)
+let currentPage = ref(0)
 let form = ref(null)
 const formData = ref({})
 const formDataUpdate = ref({})
 const toast = useToast()
 let error = ref({})
 const id_e = ref(0)
+const isLoad = ref(false)
 
 onMounted(async () => {
   display(1)
@@ -25,17 +28,20 @@ onMounted(async () => {
 })
 // display data function
 const display = (page, isFilter, datas) => {
+  isLoad.value = true
   if (isFilter) filter(datas, page)
-  axiosClient.get(`/employee?page=${page}`).then((res) => {
+  axiosClient.get(`/client?page=${page}`).then((res) => {
     data.value = res.data
     pageNumber.value = res.data.last_page
+    isLoad.value = false
   })
 }
 // Filter data
 const filter = async (datas, page = 1) => {
+  isLoad.value = true
   await axiosClient.get('sanctum/csrf-cookie')
   await axiosClient
-    .post(`/employee/filter?page=${page}`, datas, {
+    .post(`/client/filter?page=${page}`, datas, {
       headers: {
         'Content-Type': 'application/json',
         'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
@@ -44,27 +50,33 @@ const filter = async (datas, page = 1) => {
     .then((res) => {
       data.value = res.data
       pageNumber.value = res.data.last_page
+      isLoad.value = false
     })
 }
 // Sort data
 const sort = (datas) => {
-  axiosClient.get(`/employee/sort/${datas.column}/${datas.directrion}`).then((res) => {
+  isLoad.value = true
+  axiosClient.get(`/client/sort/${datas.column}/${datas.directrion}`).then((res) => {
     data.value = res.data
+    isLoad.value = false
   })
 }
 // Search data
 const search = (search) => {
   if (search !== '') {
-    axiosClient.get(`/employee/search/${search}`).then((res) => {
+    isLoad.value = true
+    axiosClient.get(`/client/search/${search}`).then((res) => {
       data.value = res.data
       pageNumber.value = res.data.last_page
+      isLoad.value = false
     })
   } else {
     display(1)
   }
 }
-// Add employee
-const addEmployee = async () => {
+// Add client
+const addClient = async () => {
+  isLoad.value = true
   let formData2 = new FormData()
   for (const key in formData.value) {
     formData2.append(key, formData.value[key])
@@ -72,7 +84,7 @@ const addEmployee = async () => {
   if (form.value.validate()) {
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
-      .post('/employee', formData2, {
+      .post('/client', formData2, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
@@ -83,10 +95,12 @@ const addEmployee = async () => {
           display(1)
           dialog.value = false
           formData.value = {}
-          toast.success('Employee added by success!', { timeout: 3000, closeOnClick: true })
+          toast.success('Client added by success!', { timeout: 3000, closeOnClick: true })
+          isLoad.value = false
         }
       })
       .catch(({ response }) => {
+        isLoad.value = false
         if (response.status == 422) {
           for (const key in response.data.errors) {
             error.value[key] = response.data.errors[key]
@@ -97,16 +111,25 @@ const addEmployee = async () => {
       })
   }
 }
-// Update employee
-const updateEmployee = async () => {
+// Update client
+const updateClient = async () => {
+  isLoad.value = true
   let formData2 = new FormData()
   for (const key in formDataUpdate.value) {
-    formData2.append(key, formDataUpdate.value[key])
+    if (formDataUpdate.value[key] !== null) {
+      if (key == 'image') {
+        if (typeof formDataUpdate.value['image'] !== 'string') {
+          formData2.append(key, formDataUpdate.value[key])
+        }
+      } else {
+        formData2.append(key, formDataUpdate.value[key])
+      }
+    }
   }
   if (form.value.validate()) {
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
-      .post(`/employee/${id_e.value}?_method=PUT`, formData2, {
+      .post(`/client/${id_e.value}?_method=PUT`, formData2, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
@@ -116,10 +139,12 @@ const updateEmployee = async () => {
         if (res.status == 200) {
           display(1)
           dialogUpdate.value = false
-          toast.success('Employee updated by success!', { timeout: 3000, closeOnClick: true })
+          toast.success('Client updated by success!', { timeout: 3000, closeOnClick: true })
+          isLoad.value = false
         }
       })
       .catch(({ response }) => {
+        isLoad.value = false
         if (response.status == 422) {
           for (const key in response.data.errors) {
             error.value[key] = response.data.errors[key]
@@ -132,7 +157,7 @@ const updateEmployee = async () => {
 }
 // Fill the update form
 const fillForm = (id) => {
-  axiosClient.get(`/employee/${id}`).then((res) => {
+  axiosClient.get(`/client/${id}`).then((res) => {
     for (const key in res.data) {
       formDataUpdate.value[key] = res.data[key]
       dialogUpdate.value = true
@@ -144,7 +169,7 @@ const fillForm = (id) => {
 const deleteFn = async (id) => {
   await axiosClient.get('sanctum/csrf-cookie')
   await axiosClient
-    .delete(`/employee/${id}`, {
+    .delete(`/client/${id}`, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
@@ -152,7 +177,7 @@ const deleteFn = async (id) => {
     })
     .then((res) => {
       display(data.value.current_page)
-      toast.success('Employee deleted by success!', { timeout: 3000, closeOnClick: true })
+      toast.success('Client deleted by success!', { timeout: 3000, closeOnClick: true })
     })
     .catch((err) => {
       toast.error('Server error!', { timeout: 3000, closeOnClick: true })
@@ -163,12 +188,12 @@ const deleteFn = async (id) => {
 <template>
   <div class="py-2 px-4">
     <section class="flex justify-between items-center">
-      <h4 class="font-bold text-0-PRIMARY_NAVY text-lg">Employees</h4>
+      <h4 class="font-bold text-0-PRIMARY_NAVY text-lg">Clients</h4>
       <button
         @click="dialog = true"
         class="bg-0-PRIMARY_BLUE text-0-PRIMARY_WHITE font-semibold rounded-md p-3 flex items-center border hover:border-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE hover:bg-transparent"
       >
-        <v-icon icon="mdi-plus" large="small"></v-icon>Add employees
+        <v-icon icon="mdi-plus" large="small"></v-icon>Add clients
       </button>
     </section>
   </div>
@@ -189,9 +214,9 @@ const deleteFn = async (id) => {
   </div>
   <!-- Modal add -->
   <v-dialog max-width="700" v-model="dialog">
-    <v-card prepend-icon="mdi-account" title="Add employee">
+    <v-card prepend-icon="mdi-account" title="Add client">
       <v-card-text>
-        <v-form ref="form" @submit.prevent="addEmployee">
+        <v-form ref="form" @submit.prevent="addClient">
           <v-row>
             <v-file-input
               clearable
@@ -200,35 +225,22 @@ const deleteFn = async (id) => {
               class="custom-inpt"
               accept="image/png, image/jpeg, image/bmp"
               prepend-icon="mdi-camera"
-              :error-messages="error.photo"
-              v-model="formData.photo"
+              :error-messages="error.image"
+              v-model="formData.image"
             ></v-file-input>
           </v-row>
           <v-row>
             <v-col cols="6">
               <v-text-field
-                label="Name"
+                label="Client name"
                 variant="outlined"
-                :error-messages="error.fullName"
-                v-model="formData.fullName"
-                :rules="validationRules.name"
+                :error-messages="error.clientName"
+                v-model="formData.clientName"
+                :rules="validationRules.clientName"
                 class="custom-inpt"
                 required
               ></v-text-field>
             </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Username"
-                variant="outlined"
-                :error-messages="error.userName"
-                v-model="formData.userName"
-                :rules="validationRules.username"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="6">
               <v-text-field
                 label="Email"
@@ -240,6 +252,8 @@ const deleteFn = async (id) => {
                 required
               ></v-text-field>
             </v-col>
+          </v-row>
+          <v-row>
             <v-col cols="6">
               <v-text-field
                 label="Phone"
@@ -251,8 +265,102 @@ const deleteFn = async (id) => {
                 required
               ></v-text-field>
             </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Website"
+                variant="outlined"
+                :error-messages="error.website"
+                v-model="formData.website"
+                :rules="validationRules.website"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
           </v-row>
           <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="Owner"
+                variant="outlined"
+                :error-messages="error.owner"
+                v-model="formData.owner"
+                :rules="validationRules.owner"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Industry"
+                variant="outlined"
+                :error-messages="error.industry"
+                v-model="formData.industry"
+                :rules="validationRules.industry"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="Currency"
+                variant="outlined"
+                :error-messages="error.currency"
+                v-model="formData.currency"
+                :rules="validationRules.currency"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Language"
+                variant="outlined"
+                :error-messages="error.languages"
+                v-model="formData.languages"
+                :rules="validationRules.languages"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="Adresse"
+                variant="outlined"
+                :error-messages="error.adresse"
+                v-model="formData.adresse"
+                :rules="validationRules.adresse"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="City"
+                variant="outlined"
+                :error-messages="error.city"
+                v-model="formData.city"
+                :rules="validationRules.city"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="State"
+                variant="outlined"
+                :error-messages="error.state"
+                v-model="formData.state"
+                :rules="validationRules.state"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
             <v-col cols="6">
               <v-select
                 :items="items"
@@ -282,77 +390,84 @@ const deleteFn = async (id) => {
                 </template>
               </v-select>
             </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Adresse"
-                variant="outlined"
-                :error-messages="error.adresse"
-                v-model="formData.adresse"
-                :rules="validationRules.address"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="City"
-                variant="outlined"
-                :error-messages="error.city"
-                v-model="formData.city"
-                :rules="validationRules.city"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="State"
-                variant="outlined"
-                :error-messages="error.state"
-                v-model="formData.state"
-                :rules="validationRules.state"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="Zip code"
-                variant="outlined"
-                :error-messages="error.zipCode"
-                v-model="formData.zipCode"
-                :rules="validationRules.zip"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Role"
-                variant="outlined"
-                :error-messages="error.role"
-                v-model="formData.role"
-                :rules="validationRules.role"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
           </v-row>
           <v-row>
             <v-col cols="12">
               <v-text-field
-                label="Salary"
+                label="Zip Code"
                 variant="outlined"
-                :error-messages="error.salary"
-                v-model="formData.salary"
-                :rules="validationRules.salary"
+                :error-messages="error.zipCode"
+                v-model="formData.zipCode"
+                :rules="validationRules.zipCode"
                 class="custom-inpt"
                 required
               ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Facebook"
+                variant="outlined"
+                :error-messages="error.facebook"
+                v-model="formData.facebook"
+                :rules="validationRules.facebook"
+                class="custom-inpt"
+                prepend-icon="mdi-facebook"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="linkedin"
+                variant="outlined"
+                :error-messages="error.linkedin"
+                v-model="formData.linkedin"
+                :rules="validationRules.linkedin"
+                class="custom-inpt"
+                prepend-icon="mdi-linkedin"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Facebook"
+                variant="outlined"
+                :error-messages="error.twitter"
+                v-model="formData.twitter"
+                :rules="validationRules.twitter"
+                class="custom-inpt"
+                prepend-icon="mdi-twitter"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="instgram"
+                variant="outlined"
+                :error-messages="error.instgram"
+                v-model="formData.instgram"
+                :rules="validationRules.instgram"
+                class="custom-inpt"
+                prepend-icon="mdi-instagram"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12">
+              <v-text-field
+                label="whatsapp"
+                variant="outlined"
+                :error-messages="error.whatsapp"
+                v-model="formData.whatsapp"
+                :rules="validationRules.whatsapp"
+                class="custom-inpt"
+                prepend-icon="mdi-whatsapp"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12">
+              <v-textarea
+                clearable
+                lalabel="Description"
+                variant="outlined"
+                :error-messages="error.description"
+                v-model="formData.description"
+                :rules="validationRules.description"
+                class="custom-inpt"
+              ></v-textarea>
             </v-col>
           </v-row>
           <v-divider></v-divider>
@@ -361,6 +476,7 @@ const deleteFn = async (id) => {
             <v-spacer></v-spacer>
 
             <button
+              type="button"
               class="hover:bg-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE_LIGHT text-sm font-normal py-2 px-4 mr-2 rounded-full shadow-lg border mt-2 bg-0-PRIMARY_BLUE_LIGHT border-0-PRIMARY_BLUE text-0-PRIMARY_BLUE"
               @click="dialog = false"
             >
@@ -380,9 +496,9 @@ const deleteFn = async (id) => {
   </v-dialog>
   <!-- Modal update -->
   <v-dialog max-width="700" v-model="dialogUpdate">
-    <v-card prepend-icon="mdi-account" title="Update employee">
+    <v-card prepend-icon="mdi-account" title="Update client">
       <v-card-text>
-        <v-form ref="form" @submit.prevent="updateEmployee">
+        <v-form ref="form" @submit.prevent="updateClient">
           <v-row>
             <v-file-input
               clearable
@@ -391,35 +507,21 @@ const deleteFn = async (id) => {
               class="custom-inpt"
               accept="image/png, image/jpeg, image/bmp"
               prepend-icon="mdi-camera"
-              :error-messages="error.photo"
               v-model="formDataUpdate.photo"
             ></v-file-input>
           </v-row>
           <v-row>
             <v-col cols="6">
               <v-text-field
-                label="Name"
+                label="Client name"
                 variant="outlined"
-                :error-messages="error.fullName"
-                v-model="formDataUpdate.fullName"
-                :rules="validationRules.name"
+                :error-messages="error.clientName"
+                v-model="formDataUpdate.clientName"
+                :rules="validationRules.clientName"
                 class="custom-inpt"
                 required
               ></v-text-field>
             </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Username"
-                variant="outlined"
-                :error-messages="error.userName"
-                v-model="formDataUpdate.userName"
-                :rules="validationRules.username"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="6">
               <v-text-field
                 label="Email"
@@ -431,6 +533,8 @@ const deleteFn = async (id) => {
                 required
               ></v-text-field>
             </v-col>
+          </v-row>
+          <v-row>
             <v-col cols="6">
               <v-text-field
                 label="Phone"
@@ -442,8 +546,102 @@ const deleteFn = async (id) => {
                 required
               ></v-text-field>
             </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Website"
+                variant="outlined"
+                :error-messages="error.website"
+                v-model="formDataUpdate.website"
+                :rules="validationRules.website"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
           </v-row>
           <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="Owner"
+                variant="outlined"
+                :error-messages="error.owner"
+                v-model="formDataUpdate.owner"
+                :rules="validationRules.owner"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Industry"
+                variant="outlined"
+                :error-messages="error.industry"
+                v-model="formDataUpdate.industry"
+                :rules="validationRules.industry"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="Currency"
+                variant="outlined"
+                :error-messages="error.currency"
+                v-model="formDataUpdate.currency"
+                :rules="validationRules.currency"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Language"
+                variant="outlined"
+                :error-messages="error.languages"
+                v-model="formDataUpdate.languages"
+                :rules="validationRules.languages"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="Adresse"
+                variant="outlined"
+                :error-messages="error.adresse"
+                v-model="formDataUpdate.adresse"
+                :rules="validationRules.adresse"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="City"
+                variant="outlined"
+                :error-messages="error.city"
+                v-model="formDataUpdate.city"
+                :rules="validationRules.city"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                label="State"
+                variant="outlined"
+                :error-messages="error.state"
+                v-model="formDataUpdate.state"
+                :rules="validationRules.state"
+                class="custom-inpt"
+                required
+              ></v-text-field>
+            </v-col>
             <v-col cols="6">
               <v-select
                 :items="items"
@@ -473,77 +671,84 @@ const deleteFn = async (id) => {
                 </template>
               </v-select>
             </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Adresse"
-                variant="outlined"
-                :error-messages="error.adresse"
-                v-model="formDataUpdate.adresse"
-                :rules="validationRules.address"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="City"
-                variant="outlined"
-                :error-messages="error.city"
-                v-model="formDataUpdate.city"
-                :rules="validationRules.city"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="State"
-                variant="outlined"
-                :error-messages="error.state"
-                v-model="formDataUpdate.state"
-                :rules="validationRules.state"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="Zip code"
-                variant="outlined"
-                :error-messages="error.zipCode"
-                v-model="formDataUpdate.zipCode"
-                :rules="validationRules.zip"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Role"
-                variant="outlined"
-                :error-messages="error.role"
-                v-model="formDataUpdate.role"
-                :rules="validationRules.role"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
           </v-row>
           <v-row>
             <v-col cols="12">
               <v-text-field
-                label="Salary"
+                label="Zip Code"
                 variant="outlined"
-                :error-messages="error.salary"
-                v-model="formDataUpdate.salary"
-                :rules="validationRules.salary"
+                :error-messages="error.zipCode"
+                v-model="formDataUpdate.zipCode"
+                :rules="validationRules.zipCode"
                 class="custom-inpt"
                 required
               ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Facebook"
+                variant="outlined"
+                :error-messages="error.facebook"
+                v-model="formDataUpdate.facebook"
+                :rules="validationRules.facebook"
+                class="custom-inpt"
+                prepend-icon="mdi-facebook"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="linkedin"
+                variant="outlined"
+                :error-messages="error.linkedin"
+                v-model="formDataUpdate.linkedin"
+                :rules="validationRules.linkedin"
+                class="custom-inpt"
+                prepend-icon="mdi-linkedin"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Facebook"
+                variant="outlined"
+                :error-messages="error.twitter"
+                v-model="formDataUpdate.twitter"
+                :rules="validationRules.twitter"
+                class="custom-inpt"
+                prepend-icon="mdi-twitter"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="instgram"
+                variant="outlined"
+                :error-messages="error.instgram"
+                v-model="formDataUpdate.instgram"
+                :rules="validationRules.instgram"
+                class="custom-inpt"
+                prepend-icon="mdi-instagram"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12">
+              <v-text-field
+                label="whatsapp"
+                variant="outlined"
+                :error-messages="error.whatsapp"
+                v-model="formDataUpdate.whatsapp"
+                :rules="validationRules.whatsapp"
+                class="custom-inpt"
+                prepend-icon="mdi-whatsapp"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12">
+              <v-textarea
+                clearable
+                lalabel="Description"
+                variant="outlined"
+                :error-messages="error.description"
+                v-model="formDataUpdate.description"
+                :rules="validationRules.description"
+                class="custom-inpt"
+              ></v-textarea>
             </v-col>
           </v-row>
           <v-divider></v-divider>
@@ -552,8 +757,9 @@ const deleteFn = async (id) => {
             <v-spacer></v-spacer>
 
             <button
+              type="button"
               class="hover:bg-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE_LIGHT text-sm font-normal py-2 px-4 mr-2 rounded-full shadow-lg border mt-2 bg-0-PRIMARY_BLUE_LIGHT border-0-PRIMARY_BLUE text-0-PRIMARY_BLUE"
-              @click="dialogUpdate = false"
+              @click="dialog = false"
             >
               Close
             </button>
@@ -569,6 +775,7 @@ const deleteFn = async (id) => {
       </v-card-text>
     </v-card>
   </v-dialog>
+  <Loader v-if="isLoad" />
 </template>
 <style>
 .custom-inpt .v-input__control .v-field--variant-outlined .v-field__field .v-field__input {

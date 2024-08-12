@@ -119,7 +119,7 @@ const deleteFn = (id) => {
 }
 // Watch if number changed or not
 watch(page, (newValue, oldValue) => {
-  if (isFilter) {
+  if (isFilter.value) {
     emit('pageChangedFilter', { condition: filter.value }, newValue)
   } else {
     emit('pageChanged', newValue)

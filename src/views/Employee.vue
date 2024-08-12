@@ -18,6 +18,7 @@ const formDataUpdate = ref({})
 const toast = useToast()
 let error = ref({})
 const id_e = ref(0)
+const isLoad = ref(false)
 
 onMounted(async () => {
   display(1)
@@ -25,14 +26,17 @@ onMounted(async () => {
 })
 // display data function
 const display = (page, isFilter, datas) => {
+  isLoad.value = true
   if (isFilter) filter(datas, page)
   axiosClient.get(`/employee?page=${page}`).then((res) => {
+    isLoad.value = false
     data.value = res.data
     pageNumber.value = res.data.last_page
   })
 }
 // Filter data
 const filter = async (datas, page = 1) => {
+  isLoad.value = true
   await axiosClient.get('sanctum/csrf-cookie')
   await axiosClient
     .post(`/employee/filter?page=${page}`, datas, {
@@ -44,18 +48,23 @@ const filter = async (datas, page = 1) => {
     .then((res) => {
       data.value = res.data
       pageNumber.value = res.data.last_page
+      isLoad.value = false
     })
 }
 // Sort data
 const sort = (datas) => {
+  isLoad.value = true
   axiosClient.get(`/employee/sort/${datas.column}/${datas.directrion}`).then((res) => {
+    isLoad.value = true
     data.value = res.data
   })
 }
 // Search data
 const search = (search) => {
+  isLoad.value = true
   if (search !== '') {
     axiosClient.get(`/employee/search/${search}`).then((res) => {
+      isLoad.value = false
       data.value = res.data
       pageNumber.value = res.data.last_page
     })
@@ -65,6 +74,7 @@ const search = (search) => {
 }
 // Add employee
 const addEmployee = async () => {
+  isLoad.value = true
   let formData2 = new FormData()
   for (const key in formData.value) {
     formData2.append(key, formData.value[key])
@@ -80,6 +90,7 @@ const addEmployee = async () => {
       })
       .then((res) => {
         if (res.status == 200) {
+          isLoad.value = false
           display(1)
           dialog.value = false
           formData.value = {}
@@ -87,6 +98,7 @@ const addEmployee = async () => {
         }
       })
       .catch(({ response }) => {
+        isLoad.value = false
         if (response.status == 422) {
           for (const key in response.data.errors) {
             error.value[key] = response.data.errors[key]
@@ -99,6 +111,7 @@ const addEmployee = async () => {
 }
 // Update employee
 const updateEmployee = async () => {
+  isLoad.value = true
   let formData2 = new FormData()
   for (const key in formDataUpdate.value) {
     formData2.append(key, formDataUpdate.value[key])
@@ -114,12 +127,14 @@ const updateEmployee = async () => {
       })
       .then((res) => {
         if (res.status == 200) {
+          isLoad.value = false
           display(1)
           dialogUpdate.value = false
           toast.success('Employee updated by success!', { timeout: 3000, closeOnClick: true })
         }
       })
       .catch(({ response }) => {
+        isLoad.value = false
         if (response.status == 422) {
           for (const key in response.data.errors) {
             error.value[key] = response.data.errors[key]
@@ -569,6 +584,7 @@ const deleteFn = async (id) => {
       </v-card-text>
     </v-card>
   </v-dialog>
+  <Loader v-if="isLoad" />
 </template>
 <style>
 .custom-inpt .v-input__control .v-field--variant-outlined .v-field__field .v-field__input {

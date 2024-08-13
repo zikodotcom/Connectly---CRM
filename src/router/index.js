@@ -19,9 +19,9 @@ const router = createRouter({
           meta: { layout: 'AdminLayouts' }
         },
         {
-          path: '/projects',
-          name: 'projects',
-          component: () => import('../views/Projects.vue'),
+          path: '/project',
+          name: 'project',
+          component: () => import('../views/Project.vue'),
           meta: { layout: 'AdminLayouts' }
         },
         {

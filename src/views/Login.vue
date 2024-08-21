@@ -22,7 +22,9 @@ const show1 = ref(false)
 const show2 = ref(true)
 const onSubmit = async (e) => {
   e.preventDefault()
-  if (form.value.validate()) {
+  let isValidate = await form.value.validate()
+
+  if (isValidate.valid) {
     console.log(getCookie('XSRF-TOKEN'))
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
@@ -54,7 +56,7 @@ const onSubmit = async (e) => {
       class="w-[50%] h-full bg-0-PRIMARY_NAVY flex flex-col justify-center px-10 text-0-PRIMARY_BLUE_LIGHT"
     >
       <h1 class="text-xl flex justify-center items-center">
-        <img :src="logo" alt="" class="mr-4" />Login
+        <img v-lazy="logo" alt="" class="mr-4" />Login
       </h1>
       <v-form @submit="onSubmit" class="mt-4" ref="form">
         <v-text-field

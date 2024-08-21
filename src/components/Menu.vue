@@ -63,7 +63,7 @@ let menus = ref([
         ><v-icon icon="mdi-close"></v-icon
       ></span>
       <div class="pr-2 p-4">
-        <img :src="Logo" alt="" class="h-9 w-9" />
+        <img v-lazy="Logo" alt="" class="h-9 w-9" />
       </div>
       <div class="mt-5">
         <h3 class="text-sm text-0-GREY_GREY_70 px-4">MENU</h3>

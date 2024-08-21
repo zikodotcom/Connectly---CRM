@@ -75,12 +75,14 @@ const search = (search) => {
 }
 // Add client
 const addClient = async () => {
-  isLoad.value = true
   let formData2 = new FormData()
   for (const key in formData.value) {
     formData2.append(key, formData.value[key])
   }
-  if (form.value.validate()) {
+  let isValidate = await form.value.validate()
+
+  if (isValidate.valid) {
+    isLoad.value = true
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
       .post('/client', formData2, {
@@ -112,7 +114,6 @@ const addClient = async () => {
 }
 // Update client
 const updateClient = async () => {
-  isLoad.value = true
   let formData2 = new FormData()
   for (const key in formDataUpdate.value) {
     if (formDataUpdate.value[key] !== null) {
@@ -125,7 +126,10 @@ const updateClient = async () => {
       }
     }
   }
-  if (form.value.validate()) {
+  let isValidate = await form.value.validate()
+
+  if (isValidate.valid) {
+    isLoad.value = true
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
       .post(`/client/${id_e.value}?_method=PUT`, formData2, {
@@ -375,14 +379,14 @@ const deleteFn = async (id) => {
               >
                 <template v-slot:selection="{ item, index }">
                   <div class="flex items-center" v-if="item.value !== ''">
-                    <img :src="item.raw.image" alt="" class="w-8 h-5 mr-4" />
+                    <img v-lazy="item.raw.image" alt="" class="w-8 h-5 mr-4" />
                     <span>{{ item.value }}</span>
                   </div>
                 </template>
                 <template v-slot:item="{ item, props }">
                   <v-select-items v-bind="props">
                     <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
-                      <img :src="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
+                      <img v-lazy="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
                       <span>{{ item.props.title.name }}</span>
                     </div>
                   </v-select-items>
@@ -656,14 +660,14 @@ const deleteFn = async (id) => {
               >
                 <template v-slot:selection="{ item, index }">
                   <div class="flex items-center" v-if="item.value !== ''">
-                    <img :src="item.raw.image" alt="" class="w-8 h-5 mr-4" />
+                    <img v-lazy="item.raw.image" alt="" class="w-8 h-5 mr-4" />
                     <span>{{ item.value }}</span>
                   </div>
                 </template>
                 <template v-slot:item="{ item, props }">
                   <v-select-items v-bind="props">
                     <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
-                      <img :src="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
+                      <img v-lazy="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
                       <span>{{ item.props.title.name }}</span>
                     </div>
                   </v-select-items>

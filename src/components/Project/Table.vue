@@ -18,11 +18,10 @@ const emit = defineEmits([
 let page = ref()
 let filter = ref({})
 let filterData = ref({})
-let countrySearch = ref('')
-let citySearch = ref('')
-let stateSearch = ref('')
-let roleSearch = ref('')
-let elementFilter = ['city', 'state', 'role']
+let status = ['In Progress', 'Pending', 'Completed']
+let priority = ['Low', 'Medium', 'High']
+let clientSearch = ref('')
+let responsableSearch = ref('')
 let isFilter = ref(false)
 let headList = [
   {
@@ -59,39 +58,32 @@ let sort = ref({
   directrion: ''
 })
 let search = ref('')
-let importDataFilter = (column) => {
-  // Import city
-  axiosClient.get(`/employee/filter/${column}`).then((res) => {
-    filterData.value[column] = res.data
+function getClientFilter() {
+  axiosClient.get('/project/filter/idC').then((res) => {
+    filterData.value['idC'] = res.data
+  })
+}
+function getEmployeeFilter() {
+  axiosClient.get('/project/filter/responsable').then((res) => {
+    filterData.value['responsable'] = res.data
   })
 }
 onMounted(async () => {
-  // Import country
-  filterData.value.country = await importCountrys()
-  // Import city
-  elementFilter.map((el) => {
-    importDataFilter(el)
-  })
+  getClientFilter()
+  getEmployeeFilter()
 })
 onUpdated(() => {
   localData.value = { ...localData.value }
 })
-// TODO: Search function in filter
-const searchFn = async (column, newValue) => {
-  let search = newValue
-  if (search == '') {
-    importDataFilter(column)
-    filterData.value = { ...filterData.value }
-  } else {
-    filterData.value[column] = filterData.value[column].filter((el) =>
-      el.toLowerCase().includes(search.toLowerCase())
-    )
-    filterData.value = { ...filterData.value }
-  }
-}
 // TODO: Filter function
 const fiterFn = async () => {
+  isFilter.value = true
   emit('filterData', { condition: filter.value })
+}
+// TODO: Reset function
+const reset = () => {
+  isFilter.value = false
+  emit('reset')
 }
 // TODO: Sort function
 const sortFn = (column) => {
@@ -133,30 +125,25 @@ watch(page, (newValue, oldValue) => {
     emit('pageChanged', newValue)
   }
 })
-// Search country
-watch(countrySearch, async (newValue, oldValue) => {
-  let search = newValue
-  if (search == '') {
-    filterData.value.country = await importCountrys()
-    filterData.value = { ...filterData.value }
-  } else {
-    filterData.value.country = filterData.value.country.filter((el) =>
-      el.name.toLowerCase().includes(search.toLowerCase())
+// client search
+watch(clientSearch, async (newValue, oldValue) => {
+  if (newValue !== '') {
+    filterData.value.idC = filterData.value.idC.filter((el) =>
+      el.name.toLowerCase().includes(newValue.toLowerCase())
     )
-    filterData.value = { ...filterData.value }
+  } else {
+    getClientFilter()
   }
 })
-// City search
-watch(citySearch, async (newValue, oldValue) => {
-  searchFn('city', newValue)
-})
-// state search
-watch(stateSearch, async (newValue, oldValue) => {
-  searchFn('state', newValue)
-})
-// role search
-watch(roleSearch, async (newValue, oldValue) => {
-  searchFn('role', newValue)
+// responsable search
+watch(responsableSearch, async (newValue, oldValue) => {
+  if (newValue !== '') {
+    filterData.value.responsable = filterData.value.responsable.filter((el) =>
+      el.name.toLowerCase().includes(newValue.toLowerCase())
+    )
+  } else {
+    getEmployeeFilter()
+  }
 })
 // Search function
 watch(search, (newValue) => {
@@ -195,31 +182,31 @@ watch(search, (newValue) => {
             <v-list>
               <v-list-item>
                 <template v-slot="">
-                  <label>Country</label>
+                  <label>Status</label>
+
+                  <v-select :items="status" variant="outlined" v-model="filter.status"> </v-select>
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <template v-slot="">
+                  <label>Priority</label>
+                  <v-select :items="priority" variant="outlined" v-model="filter.priority">
+                  </v-select>
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <template v-slot="">
+                  <label>Client</label>
                   <v-select
-                    min-width="310"
-                    max-width="310"
+                    :items="filterData.idC"
+                    item-title="name"
+                    item-value="idC"
                     variant="outlined"
-                    :items="filterData.country"
-                    v-model="filter.country"
+                    v-model="filter.idC"
                   >
                     <template v-slot:prepend-item>
                       <v-select-items v-bind="props">
-                        <v-text-field label="search" v-model="countrySearch"></v-text-field>
-                      </v-select-items>
-                    </template>
-                    <template v-slot:selection="{ item, index }">
-                      <div class="flex items-center" v-if="item.value !== ''">
-                        <img :src="item.raw.image" alt="" class="w-8 h-5 mr-4" />
-                        <span>{{ item.value.name }}</span>
-                      </div>
-                    </template>
-                    <template v-slot:item="{ item, props }">
-                      <v-select-items v-bind="props">
-                        <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
-                          <img :src="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
-                          <span>{{ item.props.title.name }}</span>
-                        </div>
+                        <v-text-field label="search" v-model="clientSearch"></v-text-field>
                       </v-select-items>
                     </template>
                   </v-select>
@@ -227,36 +214,17 @@ watch(search, (newValue) => {
               </v-list-item>
               <v-list-item>
                 <template v-slot="">
-                  <label>City</label>
-
-                  <v-select :items="filterData.city" variant="outlined" v-model="filter.city">
+                  <label>Responsable</label>
+                  <v-select
+                    :items="filterData.responsable"
+                    item-title="name"
+                    item-value="responsable"
+                    variant="outlined"
+                    v-model="filter.responsable"
+                  >
                     <template v-slot:prepend-item>
                       <v-select-items v-bind="props">
-                        <v-text-field label="search" v-model="citySearch"></v-text-field>
-                      </v-select-items>
-                    </template>
-                  </v-select>
-                </template>
-              </v-list-item>
-              <v-list-item>
-                <template v-slot="">
-                  <label>State</label>
-                  <v-select :items="filterData.state" variant="outlined" v-model="filter.state">
-                    <template v-slot:prepend-item>
-                      <v-select-items v-bind="props">
-                        <v-text-field label="search" v-model="stateSearch"></v-text-field>
-                      </v-select-items>
-                    </template>
-                  </v-select>
-                </template>
-              </v-list-item>
-              <v-list-item>
-                <template v-slot="">
-                  <label>Role</label>
-                  <v-select :items="filterData.role" variant="outlined" v-model="filter.role">
-                    <template v-slot:prepend-item>
-                      <v-select-items v-bind="props">
-                        <v-text-field label="search" v-model="roleSearch"></v-text-field>
+                        <v-text-field label="search" v-model="responsableSearch"></v-text-field>
                       </v-select-items>
                     </template>
                   </v-select>
@@ -266,7 +234,7 @@ watch(search, (newValue) => {
             <div class="flex justify-end p-2">
               <button
                 class="hover:bg-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE_LIGHT text-sm font-normal py-2 px-4 mr-2 rounded-full shadow-lg border mt-2 bg-0-PRIMARY_BLUE_LIGHT border-0-PRIMARY_BLUE text-0-PRIMARY_BLUE"
-                @click="emit('reset')"
+                @click="reset"
               >
                 Reset
               </button>
@@ -281,7 +249,7 @@ watch(search, (newValue) => {
         </v-menu>
       </div>
     </div>
-    <div class="overflow-auto h-[calc(100%-56px)]">
+    <div class="overflow-auto w-auto h-[calc(100%-56px)]">
       <!-- Adjust height to account for search and filter bars -->
       <table class="min-w-full w-auto text-sm text-left text-gray-500 overflow-x-auto">
         <thead class="text-xs text-gray-700 uppercase bg-gray-200 sticky top-0">
@@ -289,7 +257,7 @@ watch(search, (newValue) => {
             <th
               v-for="head in headList"
               scope="col"
-              class="px-6 py-3 cursor-pointer"
+              class="px-6 py-3 cursor-pointer whitespace-nowrap"
               @click="sortFn(head.key)"
             >
               {{ head.name }} {{ ' ' }}
@@ -310,6 +278,7 @@ watch(search, (newValue) => {
                 ><v-icon icon="mdi-arrow-up"></v-icon
               ></span>
             </th>
+            <th scope="col" class="px-6 py-3">Teams</th>
             <th scope="col" class="px-6 py-3">Actions</th>
           </tr>
         </thead>
@@ -318,30 +287,30 @@ watch(search, (newValue) => {
             class="odd:bg-white even:bg-gray-50 border-b transition-all ease-in-out"
             v-for="column in data.data"
           >
-            <td class="px-6 py-4 w-auto">{{ column.projectName }}</td>
-            <td class="px-6 py-4 w-auto">
+            <td class="px-6 py-4 whitespace-nowrap">{{ column.projectName }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center w-full">
                 <img
-                  :src="column.photo"
+                  v-lazy="column.photo"
                   alt=""
                   class="w-[40px] h-[40px] rounded-full mr-2 inline-block"
                 />
                 <span>{{ column.fullName }}</span>
               </div>
             </td>
-            <td class="px-6 py-4 w-auto">
+            <td class="px-6 py-4 w-auto whitespace-nowrap">
               <div class="flex items-center w-full">
                 <img
-                  :src="column.image"
+                  v-lazy="column.image"
                   alt=""
                   class="w-[40px] h-[40px] rounded-full mr-2 inline-block"
                 />
                 <span>{{ column.clientName }}</span>
               </div>
             </td>
-            <td class="px-6 py-4 w-auto">{{ column.dateS }}</td>
-            <td class="px-6 py-4 w-auto">{{ column.dateF }}</td>
-            <td class="px-6 py-4 w-auto">
+            <td class="px-6 py-4 w-auto whitespace-nowrap">{{ column.dateS }}</td>
+            <td class="px-6 py-4 w-auto whitespace-nowrap">{{ column.dateF }}</td>
+            <td class="px-6 py-4 w-auto whitespace-nowrap">
               <span
                 class="text-white p-1 rounded-xl"
                 :class="
@@ -354,7 +323,7 @@ watch(search, (newValue) => {
                 >{{ column.priority }}</span
               >
             </td>
-            <td class="px-6 py-4 w-auto">
+            <td class="px-6 py-4 w-auto whitespace-nowrap">
               <span
                 class="text-white p-1 rounded-xl"
                 :class="
@@ -367,6 +336,7 @@ watch(search, (newValue) => {
                 >{{ column.status }}</span
               >
             </td>
+            <td class="px-6 py-4"></td>
             <td class="px-6 py-4">
               <v-menu transition="scale-transition" :close-on-content-click="false">
                 <template v-slot:activator="{ props }">
@@ -376,10 +346,13 @@ watch(search, (newValue) => {
                 </template>
                 <v-card>
                   <div class="hover:bg-0-GREY_GREY_30">
-                    <button class="p-2 block" @click="emit('update', column.id_e)">Update</button>
+                    <button class="p-2 block" @click="emit('update', column.id)">Update</button>
                   </div>
                   <div class="hover:bg-0-GREY_GREY_30">
-                    <button class="p-2" @click="deleteFn(column.id_e)">Delete</button>
+                    <button class="p-2" @click="deleteFn(column.id)">Delete</button>
+                  </div>
+                  <div class="hover:bg-0-GREY_GREY_30">
+                    <button class="p-2" @click="emit('assign', column.id)">Assign team</button>
                   </div>
                 </v-card>
               </v-menu>

@@ -11,7 +11,7 @@ import avatar from '@/assets/images/dashboard/Avatar.png'
     <div class="flex justify-between items-center mt-2">
       <div class="flex space-x-2">
         <div>
-          <img :src="avatar" alt="" />
+          <img v-lazy="avatar" alt="" />
         </div>
         <div>
           <p class="text-0-PRIMARY_NAVY font-semibold text-lg">Zakaria sdik</p>
@@ -24,7 +24,7 @@ import avatar from '@/assets/images/dashboard/Avatar.png'
     <div class="flex justify-between items-center mt-2">
       <div class="flex space-x-2">
         <div>
-          <img :src="avatar" alt="" />
+          <img v-lazy="avatar" alt="" />
         </div>
         <div>
           <p class="text-0-PRIMARY_NAVY font-semibold text-lg">Zakaria sdik</p>
@@ -37,7 +37,7 @@ import avatar from '@/assets/images/dashboard/Avatar.png'
     <div class="flex justify-between items-center mt-2">
       <div class="flex space-x-2">
         <div>
-          <img :src="avatar" alt="" />
+          <img v-lazy="avatar" alt="" />
         </div>
         <div>
           <p class="text-0-PRIMARY_NAVY font-semibold text-lg">Zakaria sdik</p>

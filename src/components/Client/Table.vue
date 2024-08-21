@@ -202,14 +202,14 @@ watch(search, (newValue) => {
                     </template>
                     <template v-slot:selection="{ item, index }">
                       <div class="flex items-center" v-if="item.value !== ''">
-                        <img :src="item.raw.image" alt="" class="w-8 h-5 mr-4" />
+                        <img v-lazy="item.raw.image" alt="" class="w-8 h-5 mr-4" />
                         <span>{{ item.value.name }}</span>
                       </div>
                     </template>
                     <template v-slot:item="{ item, props }">
                       <v-select-items v-bind="props">
                         <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
-                          <img :src="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
+                          <img v-lazy="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
                           <span>{{ item.props.title.name }}</span>
                         </div>
                       </v-select-items>
@@ -294,7 +294,7 @@ watch(search, (newValue) => {
             <td class="px-6 py-4 w-[16%]">
               <div class="flex items-center w-full">
                 <img
-                  :src="column.image"
+                  v-lazy="column.image"
                   alt=""
                   class="w-[40px] h-[40px] rounded-full mr-2 inline-block"
                 />

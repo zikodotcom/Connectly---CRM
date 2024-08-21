@@ -1,15 +1,18 @@
 <script setup>
 import { axiosClient } from '@/axiosClient'
 import Table from '@/components/Project/Table.vue'
-import { onMounted, ref } from 'vue'
-import { validationRules } from '@/components/Employee/Validation'
+import { onMounted, ref, watch } from 'vue'
+import { validationRules } from '@/components/Project/Validation'
 import { importCountrys } from '@/functions/countrys'
 import { getCookie } from '@/functions/getCookie'
 import { useToast } from 'vue-toastification'
+import { useDate } from 'vuetify'
 
+const adapter = useDate()
 let data = ref(null)
 let dialog = ref(false)
 let dialogUpdate = ref(false)
+let dialogTeam = ref(false)
 let items = ref([])
 let pageNumber = ref(0)
 let form = ref(null)
@@ -17,12 +20,23 @@ const formData = ref({})
 const formDataUpdate = ref({})
 const toast = useToast()
 let error = ref({})
-const id_e = ref(0)
+const idP = ref(0)
 const isLoad = ref(false)
+const dateS = ref(false)
+const dateF = ref(false)
+const clientList = ref([])
+const employeeList = ref([])
+const listTeam = ref([])
 
 onMounted(async () => {
   display(1)
   items.value = await importCountrys()
+  axiosClient.get('/getClient').then((res) => {
+    clientList.value = res.data
+  })
+  axiosClient.get('/getEmployee').then((res) => {
+    employeeList.value = res.data
+  })
 })
 // display data function
 const display = (page, isFilter, datas) => {
@@ -74,17 +88,16 @@ const search = (search) => {
 }
 // Add project
 const addProject = async () => {
-  isLoad.value = true
-  let formData2 = new FormData()
-  for (const key in formData.value) {
-    formData2.append(key, formData.value[key])
-  }
-  if (form.value.validate()) {
+  let isValidate = await form.value.validate()
+  if (isValidate.valid) {
+    formData.value['dateS'] = changeFormat(formData.value['dateS'])
+    formData.value['dateF'] = changeFormat(formData.value['dateF'])
+    isLoad.value = true
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
-      .post('/project', formData2, {
+      .post('/project', formData.value, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
           'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
         }
       })
@@ -111,17 +124,15 @@ const addProject = async () => {
 }
 // Update project
 const updateProject = async () => {
-  isLoad.value = true
-  let formData2 = new FormData()
-  for (const key in formDataUpdate.value) {
-    formData2.append(key, formDataUpdate.value[key])
-  }
-  if (form.value.validate()) {
+  let isValidate = await form.value.validate()
+
+  if (isValidate.valid) {
+    isLoad.value = true
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
-      .post(`/project/${id_e.value}?_method=PUT`, formData2, {
+      .post(`/project/${idP.value}?_method=PUT`, formDataUpdate.value, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
           'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
         }
       })
@@ -149,12 +160,17 @@ const updateProject = async () => {
 const fillForm = (id) => {
   axiosClient.get(`/project/${id}`).then((res) => {
     for (const key in res.data) {
-      formDataUpdate.value[key] = res.data[key]
+      if (key == 'dateS' || key == 'dateF') {
+        formDataUpdate.value[key] = adapter.parseISO(res.data[key])
+      } else {
+        formDataUpdate.value[key] = res.data[key]
+      }
       dialogUpdate.value = true
     }
-    id_e.value = id
+    idP.value = id
   })
 }
+
 // delete
 const deleteFn = async (id) => {
   await axiosClient.get('sanctum/csrf-cookie')
@@ -172,6 +188,55 @@ const deleteFn = async (id) => {
     .catch((err) => {
       toast.error('Server error!', { timeout: 3000, closeOnClick: true })
     })
+}
+
+// Change the forma of date
+function changeFormat(date) {
+  let dates = new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  return dates
+}
+// Assign team dialog
+const assignTeamDialog = (id) => {
+  dialogTeam.value = true
+  idP.value = id
+}
+// Assign team function
+const assignTeam = async () => {
+  await axiosClient.get('sanctum/csrf-cookie')
+  await axiosClient
+    .post(
+      '/project/assignTeam',
+      { id: idP.value, id_e: listTeam.value },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
+        }
+      }
+    )
+    .then((res) => {
+      display(data.value.current_page)
+      toast.success('Teams assigned by success!', { timeout: 3000, closeOnClick: true })
+    })
+    .catch((err) => {
+      toast.error('Server error!', { timeout: 3000, closeOnClick: true })
+    })
+}
+// search employee
+const searchEmployee = (e) => {
+  if (e.target.value !== '') {
+    employeeList.value = employeeList.value.filter((el) =>
+      el.fullName.toLowerCase().includes(e.target.value.toLowerCase())
+    )
+  } else {
+    axiosClient.get('/getEmployee').then((res) => {
+      employeeList.value = res.data
+    })
+  }
 }
 </script>
 
@@ -200,6 +265,7 @@ const deleteFn = async (id) => {
       @reset="display(1)"
       @update="fillForm"
       @delete="deleteFn"
+      @assign="assignTeamDialog"
     />
   </div>
   <!-- Modal add -->
@@ -208,170 +274,178 @@ const deleteFn = async (id) => {
       <v-card-text>
         <v-form ref="form" @submit.prevent="addProject">
           <v-row>
-            <v-file-input
-              clearable
-              label="File input"
-              variant="outlined"
-              class="custom-inpt"
-              accept="image/png, image/jpeg, image/bmp"
-              prepend-icon="mdi-camera"
-              :error-messages="error.photo"
-              v-model="formData.photo"
-            ></v-file-input>
-          </v-row>
-          <v-row>
             <v-col cols="6">
               <v-text-field
-                label="Name"
+                label="Project Name"
                 variant="outlined"
-                :error-messages="error.fullName"
-                v-model="formData.fullName"
-                :rules="validationRules.name"
+                :error-messages="error.projectName"
+                v-model="formData.projectName"
+                :rules="validationRules.projectName"
                 class="custom-inpt"
                 required
               ></v-text-field>
             </v-col>
             <v-col cols="6">
-              <v-text-field
-                label="Username"
-                variant="outlined"
-                :error-messages="error.userName"
-                v-model="formData.userName"
-                :rules="validationRules.username"
-                class="custom-inpt"
-                required
-              ></v-text-field>
+              <v-menu
+                v-model="dateS"
+                :close-on-content-click="false"
+                transition="scale-transition"
+                offset-y
+                full-width
+                max-width="290px"
+                min-width="290px"
+              >
+                <template v-slot:activator="{ props }">
+                  <v-text-field
+                    label="Start date"
+                    variant="outlined"
+                    class="custom-inpt"
+                    persistent-hint
+                    readonly
+                    v-model="formData.dateS"
+                    v-bind="props"
+                  ></v-text-field>
+                </template>
+                <v-date-picker v-model="formData.dateS" no-title></v-date-picker>
+              </v-menu>
             </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="6">
-              <v-text-field
-                label="Email"
-                variant="outlined"
-                :error-messages="error.email"
-                v-model="formData.email"
-                :rules="validationRules.email"
-                class="custom-inpt"
-                required
-              ></v-text-field>
+              <v-menu
+                v-model="dateF"
+                :close-on-content-click="false"
+                transition="scale-transition"
+                offset-y
+                full-width
+                max-width="290px"
+                min-width="290px"
+              >
+                <template v-slot:activator="{ props }">
+                  <v-text-field
+                    label="End date"
+                    variant="outlined"
+                    class="custom-inpt"
+                    persistent-hint
+                    readonly
+                    v-model="formData.dateF"
+                    v-bind="props"
+                  ></v-text-field>
+                </template>
+                <v-date-picker v-model="formData.dateF" no-title></v-date-picker>
+              </v-menu>
             </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Phone"
-                variant="outlined"
-                :error-messages="error.phone"
-                v-model="formData.phone"
-                :rules="validationRules.phone"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="6">
               <v-select
-                :items="items"
-                item-text="name"
-                item-value="name"
+                label="Priority"
+                :items="['Low', 'Medium', 'High']"
                 variant="outlined"
-                label="Country"
-                :error-messages="error.country"
-                v-model="formData.country"
-                :rules="validationRules.country"
+                :error-messages="error.priority"
+                v-model="formData.priority"
+                :rules="validationRules.priority"
+                class="custom-inpt"
+                required
+              ></v-select>
+            </v-col>
+            <v-col cols="6">
+              <v-select
+                label="Status"
+                :items="['Pending', 'In Progress', 'Completed']"
+                variant="outlined"
+                :error-messages="error.status"
+                v-model="formData.status"
+                :rules="validationRules.status"
+                class="custom-inpt"
+                required
+              ></v-select>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Project amount"
+                variant="outlined"
+                :error-messages="error.amount"
+                v-model="formData.amount"
+                :rules="validationRules.amount"
+                class="custom-inpt"
+                type="number"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-select
+                label="Client name"
+                :items="clientList"
+                variant="outlined"
+                item-value="idC"
+                :error-messages="error.idC"
+                v-model="formData.idC"
+                :rules="validationRules.idC"
                 class="custom-inpt"
                 required
               >
                 <template v-slot:selection="{ item, index }">
                   <div class="flex items-center" v-if="item.value !== ''">
-                    <img :src="item.raw.image" alt="" class="w-8 h-5 mr-4" />
-                    <span>{{ item.value }}</span>
+                    <img v-lazy="item.raw.image" alt="" class="w-8 h-8 mr-4 rounded-full" />
+                    <span>{{ item.raw.clientName.substring(0, 20) }}</span>
                   </div>
                 </template>
                 <template v-slot:item="{ item, props }">
                   <v-select-items v-bind="props">
                     <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
-                      <img :src="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
-                      <span>{{ item.props.title.name }}</span>
+                      <img
+                        v-lazy="item.props.title.image"
+                        alt=""
+                        class="w-8 h-8 mr-4 rounded-full"
+                      />
+                      <span>{{ item.props.title.clientName }}</span>
                     </div>
                   </v-select-items>
                 </template>
               </v-select>
             </v-col>
             <v-col cols="6">
-              <v-text-field
-                label="Adresse"
+              <v-select
+                label="Responsable"
+                :items="employeeList"
                 variant="outlined"
-                :error-messages="error.adresse"
-                v-model="formData.adresse"
-                :rules="validationRules.address"
+                item-value="id_e"
+                :error-messages="error.responsable"
+                v-model="formData.responsable"
+                :rules="validationRules.responsable"
                 class="custom-inpt"
                 required
-              ></v-text-field>
+              >
+                <template v-slot:selection="{ item, index }">
+                  <div class="flex items-center" v-if="item.value !== ''">
+                    <img v-lazy="item.raw.photo" alt="" class="w-8 h-8 mr-4 rounded-full" />
+                    <span>{{ item.raw.fullName.substring(0, 20) }}</span>
+                  </div>
+                </template>
+                <template v-slot:item="{ item, props }">
+                  <v-select-items v-bind="props">
+                    <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
+                      <img
+                        v-lazy="item.props.title.photo"
+                        alt=""
+                        class="w-8 h-8 mr-4 rounded-full"
+                      />
+                      <span>{{ item.props.title.fullName }}</span>
+                    </div>
+                  </v-select-items>
+                </template>
+              </v-select>
             </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="City"
-                variant="outlined"
-                :error-messages="error.city"
-                v-model="formData.city"
-                :rules="validationRules.city"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="State"
-                variant="outlined"
-                :error-messages="error.state"
-                v-model="formData.state"
-                :rules="validationRules.state"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="Zip code"
-                variant="outlined"
-                :error-messages="error.zipCode"
-                v-model="formData.zipCode"
-                :rules="validationRules.zip"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Role"
-                variant="outlined"
-                :error-messages="error.role"
-                v-model="formData.role"
-                :rules="validationRules.role"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="12">
-              <v-text-field
-                label="Salary"
+              <v-textarea
+                label="Description"
                 variant="outlined"
-                :error-messages="error.salary"
-                v-model="formData.salary"
-                :rules="validationRules.salary"
+                :error-messages="error.description"
+                v-model="formData.description"
+                :rules="validationRules.description"
                 class="custom-inpt"
                 required
-              ></v-text-field>
+              ></v-textarea>
             </v-col>
           </v-row>
           <v-divider></v-divider>
-
           <v-card-actions>
             <v-spacer></v-spacer>
 
@@ -399,166 +473,175 @@ const deleteFn = async (id) => {
       <v-card-text>
         <v-form ref="form" @submit.prevent="updateProject">
           <v-row>
-            <v-file-input
-              clearable
-              label="File input"
-              variant="outlined"
-              class="custom-inpt"
-              accept="image/png, image/jpeg, image/bmp"
-              prepend-icon="mdi-camera"
-              :error-messages="error.photo"
-              v-model="formDataUpdate.photo"
-            ></v-file-input>
-          </v-row>
-          <v-row>
             <v-col cols="6">
               <v-text-field
-                label="Name"
+                label="Project Name"
                 variant="outlined"
-                :error-messages="error.fullName"
-                v-model="formDataUpdate.fullName"
-                :rules="validationRules.name"
+                :error-messages="error.projectName"
+                v-model="formDataUpdate.projectName"
+                :rules="validationRules.projectName"
                 class="custom-inpt"
                 required
               ></v-text-field>
             </v-col>
             <v-col cols="6">
-              <v-text-field
-                label="Username"
-                variant="outlined"
-                :error-messages="error.userName"
-                v-model="formDataUpdate.userName"
-                :rules="validationRules.username"
-                class="custom-inpt"
-                required
-              ></v-text-field>
+              <v-menu
+                v-model="dateS"
+                :close-on-content-click="false"
+                transition="scale-transition"
+                offset-y
+                full-width
+                max-width="290px"
+                min-width="290px"
+              >
+                <template v-slot:activator="{ props }">
+                  <v-text-field
+                    label="Start date"
+                    variant="outlined"
+                    class="custom-inpt"
+                    persistent-hint
+                    readonly
+                    v-model="formDataUpdate.dateS"
+                    v-bind="props"
+                  ></v-text-field>
+                </template>
+                <v-date-picker v-model="formDataUpdate.dateS" no-title></v-date-picker>
+              </v-menu>
             </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="6">
-              <v-text-field
-                label="Email"
-                variant="outlined"
-                :error-messages="error.email"
-                v-model="formDataUpdate.email"
-                :rules="validationRules.email"
-                class="custom-inpt"
-                required
-              ></v-text-field>
+              <v-menu
+                v-model="dateF"
+                :close-on-content-click="false"
+                transition="scale-transition"
+                offset-y
+                full-width
+                max-width="290px"
+                min-width="290px"
+              >
+                <template v-slot:activator="{ props }">
+                  <v-text-field
+                    label="End date"
+                    variant="outlined"
+                    class="custom-inpt"
+                    persistent-hint
+                    readonly
+                    v-model="formDataUpdate.dateF"
+                    v-bind="props"
+                  ></v-text-field>
+                </template>
+                <v-date-picker v-model="formDataUpdate.dateF" no-title></v-date-picker>
+              </v-menu>
             </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Phone"
-                variant="outlined"
-                :error-messages="error.phone"
-                v-model="formDataUpdate.phone"
-                :rules="validationRules.phone"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="6">
               <v-select
-                :items="items"
-                item-text="name"
-                item-value="name"
+                label="Priority"
+                :items="['Low', 'Medium', 'High']"
                 variant="outlined"
-                label="Country"
-                :error-messages="error.country"
-                v-model="formDataUpdate.country"
-                :rules="validationRules.country"
+                :error-messages="error.priority"
+                v-model="formDataUpdate.priority"
+                :rules="validationRules.priority"
+                class="custom-inpt"
+                required
+              ></v-select>
+            </v-col>
+            <v-col cols="6">
+              <v-select
+                label="Status"
+                :items="['Pending', 'In Progress', 'Completed']"
+                variant="outlined"
+                :error-messages="error.status"
+                v-model="formDataUpdate.status"
+                :rules="validationRules.status"
+                class="custom-inpt"
+                required
+              ></v-select>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                label="Project amount"
+                variant="outlined"
+                :error-messages="error.amount"
+                v-model="formDataUpdate.amount"
+                :rules="validationRules.amount"
+                class="custom-inpt"
+                type="number"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-select
+                label="Client name"
+                :items="clientList"
+                variant="outlined"
+                item-value="idC"
+                :error-messages="error.idC"
+                v-model="formDataUpdate.idC"
+                :rules="validationRules.idC"
                 class="custom-inpt"
                 required
               >
                 <template v-slot:selection="{ item, index }">
                   <div class="flex items-center" v-if="item.value !== ''">
-                    <img :src="item.raw.image" alt="" class="w-8 h-5 mr-4" />
-                    <span>{{ item.value }}</span>
+                    <img v-lazy="item.raw.image" alt="" class="w-8 h-8 mr-4 rounded-full" />
+                    <span>{{ item.raw.clientName.substring(0, 20) }}</span>
                   </div>
                 </template>
                 <template v-slot:item="{ item, props }">
                   <v-select-items v-bind="props">
                     <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
-                      <img :src="item.props.title.image" alt="" class="w-8 h-5 mr-4" />
-                      <span>{{ item.props.title.name }}</span>
+                      <img
+                        v-lazy="item.props.title.image"
+                        alt=""
+                        class="w-8 h-8 mr-4 rounded-full"
+                      />
+                      <span>{{ item.props.title.clientName }}</span>
                     </div>
                   </v-select-items>
                 </template>
               </v-select>
             </v-col>
             <v-col cols="6">
-              <v-text-field
-                label="Adresse"
+              <v-select
+                label="Responsable"
+                :items="employeeList"
                 variant="outlined"
-                :error-messages="error.adresse"
-                v-model="formDataUpdate.adresse"
-                :rules="validationRules.address"
+                item-value="id_e"
+                :error-messages="error.responsable"
+                v-model="formDataUpdate.responsable"
+                :rules="validationRules.responsable"
                 class="custom-inpt"
                 required
-              ></v-text-field>
+              >
+                <template v-slot:selection="{ item, index }">
+                  <div class="flex items-center" v-if="item.value !== ''">
+                    <img v-lazy="item.raw.photo" alt="" class="w-8 h-8 mr-4 rounded-full" />
+                    <span>{{ item.raw.fullName.substring(0, 20) }}</span>
+                  </div>
+                </template>
+                <template v-slot:item="{ item, props }">
+                  <v-select-items v-bind="props">
+                    <div class="flex items-center p-4 cursor-pointer hover:bg-0-GREY_GREY_50">
+                      <img
+                        v-lazy="item.props.title.photo"
+                        alt=""
+                        class="w-8 h-8 mr-4 rounded-full"
+                      />
+                      <span>{{ item.props.title.fullName }}</span>
+                    </div>
+                  </v-select-items>
+                </template>
+              </v-select>
             </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="City"
-                variant="outlined"
-                :error-messages="error.city"
-                v-model="formDataUpdate.city"
-                :rules="validationRules.city"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="State"
-                variant="outlined"
-                :error-messages="error.state"
-                v-model="formDataUpdate.state"
-                :rules="validationRules.state"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field
-                label="Zip code"
-                variant="outlined"
-                :error-messages="error.zipCode"
-                v-model="formDataUpdate.zipCode"
-                :rules="validationRules.zip"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                label="Role"
-                variant="outlined"
-                :error-messages="error.role"
-                v-model="formDataUpdate.role"
-                :rules="validationRules.role"
-                class="custom-inpt"
-                required
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="12">
-              <v-text-field
-                label="Salary"
+              <v-textarea
+                label="Description"
                 variant="outlined"
-                :error-messages="error.salary"
-                v-model="formDataUpdate.salary"
-                :rules="validationRules.salary"
+                :error-messages="error.description"
+                v-model="formDataUpdate.description"
+                :rules="validationRules.description"
                 class="custom-inpt"
                 required
-              ></v-text-field>
+              ></v-textarea>
             </v-col>
           </v-row>
           <v-divider></v-divider>
@@ -568,7 +651,7 @@ const deleteFn = async (id) => {
 
             <button
               class="hover:bg-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE_LIGHT text-sm font-normal py-2 px-4 mr-2 rounded-full shadow-lg border mt-2 bg-0-PRIMARY_BLUE_LIGHT border-0-PRIMARY_BLUE text-0-PRIMARY_BLUE"
-              @click="dialogUpdate = false"
+              @click="dialog = false"
             >
               Close
             </button>
@@ -582,6 +665,56 @@ const deleteFn = async (id) => {
           </v-card-actions>
         </v-form>
       </v-card-text>
+    </v-card>
+  </v-dialog>
+  <!-- Assign team -->
+  <v-dialog max-width="700" v-model="dialogTeam">
+    <v-card title="Assign team">
+      <v-card-text>
+        <v-row>
+          <v-col cols="12">
+            <v-text-field label="search" @input="searchEmployee"></v-text-field>
+          </v-col>
+        </v-row>
+        <div class="max-h-[400px] overflow-x-hidden">
+          <v-row v-for="employee in employeeList">
+            <v-col cols="6">
+              <div class="flex items-center">
+                <img v-lazy="employee.photo" alt="" class="w-8 h-8 rounded-full mr-2" />
+                <span>{{ employee.fullName }}</span>
+              </div>
+            </v-col>
+            <v-col cols="4"></v-col>
+            <v-col cols="2">
+              <v-switch
+                v-model="listTeam"
+                color="success"
+                :value="employee.id_e"
+                hide-details
+              ></v-switch
+            ></v-col>
+          </v-row>
+        </div>
+      </v-card-text>
+      <v-divider></v-divider>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+
+        <button
+          class="hover:bg-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE_LIGHT text-sm font-normal py-2 px-4 mr-2 rounded-full shadow-lg border mt-2 bg-0-PRIMARY_BLUE_LIGHT border-0-PRIMARY_BLUE text-0-PRIMARY_BLUE"
+          @click="dialogTeam = false"
+        >
+          Close
+        </button>
+
+        <button
+          class="bg-0-PRIMARY_BLUE !text-0-PRIMARY_BLUE_LIGHT text-sm font-normal py-2 px-4 mr-2 rounded-full shadow-lg border mt-2 hover:bg-0-PRIMARY_BLUE_LIGHT hover:border-0-PRIMARY_BLUE hover:!text-0-PRIMARY_BLUE"
+          @click="assignTeam"
+        >
+          Assign teams
+        </button>
+      </v-card-actions>
     </v-card>
   </v-dialog>
   <Loader v-if="isLoad" />

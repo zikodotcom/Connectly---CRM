@@ -15,7 +15,7 @@ import invoices from '@/assets/images/dashboard/invoices.png'
           <p class="text-0-PRIMARY_NAVY text-lg font-bold">20000</p>
         </div>
         <div>
-          <img :src="clients" alt="" />
+          <img v-lazy="clients" alt="" />
         </div>
       </div>
     </div>
@@ -27,7 +27,7 @@ import invoices from '@/assets/images/dashboard/invoices.png'
           <p class="text-0-PRIMARY_NAVY text-lg font-bold">200</p>
         </div>
         <div>
-          <img :src="employees" alt="" />
+          <img v-lazy="employees" alt="" />
         </div>
       </div>
     </div>
@@ -39,7 +39,7 @@ import invoices from '@/assets/images/dashboard/invoices.png'
           <p class="text-0-PRIMARY_NAVY text-lg font-bold">20000</p>
         </div>
         <div>
-          <img :src="projects" alt="" />
+          <img v-lazy="projects" alt="" />
         </div>
       </div>
     </div>
@@ -51,7 +51,7 @@ import invoices from '@/assets/images/dashboard/invoices.png'
           <p class="text-0-PRIMARY_NAVY text-lg font-bold">50</p>
         </div>
         <div>
-          <img :src="invoices" alt="" />
+          <img v-lazy="invoices" alt="" />
         </div>
       </div>
     </div>

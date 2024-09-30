@@ -35,6 +35,12 @@ const router = createRouter({
           name: 'client',
           component: () => import('../views/Client.vue'),
           meta: { layout: 'AdminLayouts' }
+        },
+        {
+          path: '/task',
+          name: 'task',
+          component: () => import('../views/Task.vue'),
+          meta: { layout: 'AdminLayouts' }
         }
       ]
     }

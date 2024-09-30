@@ -1,8 +1,9 @@
 <script setup>
 import { axiosClient } from '@/axiosClient'
 import { importCountrys } from '@/functions/countrys'
-import { onMounted, onUpdated, ref, watch } from 'vue'
+import { computed, onMounted, onUpdated, ref, watch } from 'vue'
 import Swal from 'sweetalert2'
+import DisplayTeamMember from './DisplayTeamMember.vue'
 let { data, pageNumber } = defineProps(['data', 'pageNumber'])
 let localData = ref(data)
 const emit = defineEmits([
@@ -149,6 +150,19 @@ watch(responsableSearch, async (newValue, oldValue) => {
 watch(search, (newValue) => {
   emit('searchData', newValue)
 })
+// Display team members
+const displayTeamMembers = (team) => {
+  if (team !== '') {
+    let listTeam = team.split(',')
+    return listTeam.map((el) => {
+      let person = el.split(';')
+      return {
+        img: person[0],
+        name: person[1]
+      }
+    })
+  }
+}
 </script>
 
 <template>
@@ -291,21 +305,21 @@ watch(search, (newValue) => {
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center w-full">
                 <img
-                  v-lazy="column.photo"
+                  v-lazy="column.resp_project.photo"
                   alt=""
                   class="w-[40px] h-[40px] rounded-full mr-2 inline-block"
                 />
-                <span>{{ column.fullName }}</span>
+                <span>{{ column.resp_project.fullName }}</span>
               </div>
             </td>
             <td class="px-6 py-4 w-auto whitespace-nowrap">
               <div class="flex items-center w-full">
                 <img
-                  v-lazy="column.image"
+                  v-lazy="column.client.image"
                   alt=""
                   class="w-[40px] h-[40px] rounded-full mr-2 inline-block"
                 />
-                <span>{{ column.clientName }}</span>
+                <span>{{ column.client.clientName }}</span>
               </div>
             </td>
             <td class="px-6 py-4 w-auto whitespace-nowrap">{{ column.dateS }}</td>
@@ -336,7 +350,15 @@ watch(search, (newValue) => {
                 >{{ column.status }}</span
               >
             </td>
-            <td class="px-6 py-4"></td>
+            <td class="px-6 py-4 w-auto whitespace-nowrap flex space-x-1">
+              <div v-for="team in column.employees" class="w-auto">
+                <v-tooltip :text="team.fullName">
+                  <template v-slot:activator="{ props }">
+                    <v-avatar :image="team.photo" size="30" v-bind="props"></v-avatar>
+                  </template>
+                </v-tooltip>
+              </div>
+            </td>
             <td class="px-6 py-4">
               <v-menu transition="scale-transition" :close-on-content-click="false">
                 <template v-slot:activator="{ props }">

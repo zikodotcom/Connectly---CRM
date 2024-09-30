@@ -203,6 +203,11 @@ function changeFormat(date) {
 const assignTeamDialog = (id) => {
   dialogTeam.value = true
   idP.value = id
+  axiosClient.get('/project/getTeam/' + id).then((res) => {
+    listTeam.value = res.data.map((el) => {
+      return el.id_e
+    })
+  })
 }
 // Assign team function
 const assignTeam = async () => {
@@ -221,6 +226,7 @@ const assignTeam = async () => {
     .then((res) => {
       display(data.value.current_page)
       toast.success('Teams assigned by success!', { timeout: 3000, closeOnClick: true })
+      dialogTeam.value = false
     })
     .catch((err) => {
       toast.error('Server error!', { timeout: 3000, closeOnClick: true })
@@ -680,7 +686,11 @@ const searchEmployee = (e) => {
           <v-row v-for="employee in employeeList">
             <v-col cols="6">
               <div class="flex items-center">
-                <img v-lazy="employee.photo" alt="" class="w-8 h-8 rounded-full mr-2" />
+                <img
+                  v-lazy="employee.photo"
+                  alt=""
+                  class="w-8 h-8 rounded-full mr-2 border border-0-PRIMARY_BLUE"
+                />
                 <span>{{ employee.fullName }}</span>
               </div>
             </v-col>

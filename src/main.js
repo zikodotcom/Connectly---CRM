@@ -13,13 +13,14 @@ import 'vue-toastification/dist/index.css'
 import VueSweetalert2 from 'vue-sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
 import VueLazyload from 'vue-lazyload'
+import PrimeVue from 'primevue/config'
+import Aura from '@primevue/themes/aura'
 
 const app = createApp(App)
 const vuetify = createVuetify({
   components,
   directives
 })
-
 app
   .use(router)
   .use(vuetify)
@@ -32,6 +33,14 @@ app
       'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.superiorlawncareusa.com%2Fwp-content%2Fuploads%2F2020%2F05%2Floading-gif-png-5.gif&f=1&nofb=1&ipt=251ca2387ce67e804b94ac35b57909055f49565b0fc63ce981c6dafd8789f858&ipo=images',
     attempt: 1,
     listenEvents: ['scroll']
+  })
+  .use(PrimeVue, {
+    theme: {
+      preset: Aura,
+      options: {
+        darkModeSelector: '.my-app-dark'
+      }
+    }
   })
 
 app.mount('#app')

@@ -6,6 +6,7 @@ import { getCookie } from '@/functions/getCookie'
 import draggable from 'vuedraggable'
 import { useToast } from 'vue-toastification'
 import TaskDialog from '@/components/Task/TaskDialog.vue'
+import Avatar from 'primevue/avatar'
 
 const taskDialog = ref(null)
 const toast = useToast()
@@ -167,24 +168,12 @@ const searchEmployee = (e) => {
               </p>
               <div class="flex justify-between items-center my-2">
                 <div>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                </div>
-                <div>
-                  <span>1</span>
-                  <v-icon icon="mdi-comment-processing"></v-icon>
-                  <span>1</span>
-                  <v-icon icon="mdi-heart-outline"></v-icon>
+                  <v-tooltip v-for="collab in task.collaborators" :text="collab.fullName">
+                    <template v-slot:activator="{ props }">
+                      {{ collab.Nom }}
+                      <Avatar :image="collab.photo" class="mr-2" shape="circle" v-bind="props" />
+                    </template>
+                  </v-tooltip>
                 </div>
               </div>
             </div>
@@ -233,24 +222,12 @@ const searchEmployee = (e) => {
               </p>
               <div class="flex justify-between items-center my-2">
                 <div>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                </div>
-                <div>
-                  <span>1</span>
-                  <v-icon icon="mdi-comment-processing"></v-icon>
-                  <span>1</span>
-                  <v-icon icon="mdi-heart-outline"></v-icon>
+                  <v-tooltip v-for="collab in task.collaborators" :text="collab.fullName">
+                    <template v-slot:activator="{ props }">
+                      {{ collab.Nom }}
+                      <Avatar :image="collab.photo" class="mr-2" shape="circle" v-bind="props" />
+                    </template>
+                  </v-tooltip>
                 </div>
               </div>
             </div>
@@ -299,24 +276,12 @@ const searchEmployee = (e) => {
               </p>
               <div class="flex justify-between items-center my-2">
                 <div>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                </div>
-                <div>
-                  <span>1</span>
-                  <v-icon icon="mdi-comment-processing"></v-icon>
-                  <span>1</span>
-                  <v-icon icon="mdi-heart-outline"></v-icon>
+                  <v-tooltip v-for="collab in task.collaborators" :text="collab.fullName">
+                    <template v-slot:activator="{ props }">
+                      {{ collab.Nom }}
+                      <Avatar :image="collab.photo" class="mr-2" shape="circle" v-bind="props" />
+                    </template>
+                  </v-tooltip>
                 </div>
               </div>
             </div>
@@ -365,24 +330,12 @@ const searchEmployee = (e) => {
               </p>
               <div class="flex justify-between items-center my-2">
                 <div>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                  <v-avatar
-                    size="35"
-                    image="https://t3.ftcdn.net/jpg/02/43/12/34/360_F_243123463_zTooub557xEWABDLk0jJklDyLSGl2jrr.jpg"
-                  ></v-avatar>
-                </div>
-                <div>
-                  <span>1</span>
-                  <v-icon icon="mdi-comment-processing"></v-icon>
-                  <span>1</span>
-                  <v-icon icon="mdi-heart-outline"></v-icon>
+                  <v-tooltip v-for="collab in task.collaborators" :text="collab.fullName">
+                    <template v-slot:activator="{ props }">
+                      {{ collab.Nom }}
+                      <Avatar :image="collab.photo" class="mr-2" shape="circle" v-bind="props" />
+                    </template>
+                  </v-tooltip>
                 </div>
               </div>
             </div>

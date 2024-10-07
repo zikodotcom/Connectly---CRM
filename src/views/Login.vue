@@ -3,6 +3,7 @@ import bg from '@/assets/images/bg.jpeg'
 import logo from '@/assets/images/Logo.png'
 import { axiosClient } from '@/axiosClient'
 import { getCookie } from '@/functions/getCookie'
+import { store } from '@/store/store'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -25,7 +26,6 @@ const onSubmit = async (e) => {
   let isValidate = await form.value.validate()
 
   if (isValidate.valid) {
-    console.log(getCookie('XSRF-TOKEN'))
     await axiosClient.get('sanctum/csrf-cookie')
     await axiosClient
       .post('/login', user.value, {
@@ -37,7 +37,7 @@ const onSubmit = async (e) => {
       .then((res) => {
         if (res.status == 204) {
           rules.value.emailMatch = null
-          route.push('/dashboard')
+          route.push('/')
         } else {
           rules.value.emailMatch = `The email and password you entered don't match`
         }

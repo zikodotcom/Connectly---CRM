@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AdminLayouts from '@/layouts/AdminLayouts.vue'
+import { store } from '@/store/store'
+import { getCookie } from '@/functions/getCookie'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -45,6 +47,17 @@ const router = createRouter({
       ]
     }
   ]
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.path == '/login' && getCookie('XSRF-TOKEN') !== null) {
+    next({ path: '/' })
+  }
+  if (getCookie('XSRF-TOKEN') == null && to.path !== '/login') {
+    next({ path: '/login' })
+  } else {
+    next() // Redirect to login page
+  }
 })
 
 export default router

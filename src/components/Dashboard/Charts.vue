@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -10,11 +10,28 @@ import {
   CategoryScale,
   LinearScale
 } from 'chart.js'
+import { axiosClient } from '@/axiosClient'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+onMounted(async () => {
+  await axiosClient.get('/task').then((res) => {
+    chartData.value.datasets[0]['data'] = [
+      res.data['Pending'].length,
+      res.data['In progress'].length,
+      res.data['In review'].length,
+      res.data['Completed'].length
+    ]
+  })
+})
 let chartData = ref({
-  labels: ['January', 'February', 'March'],
-  datasets: [{ data: [40, 20, 12] }]
+  labels: ['Pending', 'In progress', 'In review', 'Completed'],
+  datasets: [
+    {
+      label: 'Tasks',
+      backgroundColor: '#514EF3',
+      data: []
+    }
+  ]
 })
 let chartOptions = ref({
   responsive: true,
@@ -32,6 +49,12 @@ let chartOptions = ref({
 
 <template>
   <div class="w-[50%]">
-    <Bar id="my-chart-id" :options="chartOptions" :data="chartData" />
+    <h1>Tasks</h1>
+    <Bar
+      id="my-chart-id"
+      v-if="chartData.datasets[0].data.length !== 0"
+      :options="chartOptions"
+      :data="chartData"
+    />
   </div>
 </template>

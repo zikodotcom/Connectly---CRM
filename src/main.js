@@ -15,6 +15,7 @@ import 'sweetalert2/dist/sweetalert2.min.css'
 import VueLazyload from 'vue-lazyload'
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
+import { store } from './store/store'
 
 const app = createApp(App)
 const vuetify = createVuetify({
@@ -42,5 +43,6 @@ app
       }
     }
   })
+  .use(store)
 
 app.mount('#app')

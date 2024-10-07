@@ -1,12 +1,15 @@
 <script setup>
 import { axiosClient } from '@/axiosClient'
 import { getCookie } from '@/functions/getCookie'
+import { store } from '@/store/store'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import DatePicker from 'primevue/datepicker'
+import Dialog from 'primevue/dialog'
 import Drawer from 'primevue/drawer'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
+import { useToast } from 'vue-toastification'
 
 import { onMounted, ref, watch } from 'vue'
 
@@ -19,6 +22,7 @@ const emp = employees
 let page = 0
 let paginateEmployees = ref(emp.slice(page, 10))
 const emit = defineEmits(['search', 'close'])
+const toast = useToast()
 
 const isDateS = ref(true)
 
@@ -26,12 +30,15 @@ const isDateF = ref(true)
 
 const isDesc = ref(true)
 
+const deleteDialog = ref(false)
+const id_attach = ref()
+
 onMounted(() => {
   listTeam.value = task.collaborators.map((el) => el.id_e)
   // Handle img file
-  task.attachments = task.attachments.map(async (el) => {
+  task.attachments = task.attachments.map((el) => {
     let extension = el.name.split('.')
-    let img = await import(`@/assets/images/files/${extension[1]}.png`)
+    let img = extension[1]
     return {
       ...el,
       img
@@ -122,23 +129,42 @@ const uploadFile = (e) => {
       }
     })
     .then((res) => {
-      console.log(res.data)
+      let ourData = res.data.data
+      let extension = ourData.name.split('.')
+      let img = extension[1]
+      ourData['img'] = img
+      task.attachments.unshift(ourData)
     })
 }
-const getExtension = async (name) => {
-  const extension = name.split('.').pop().toLowerCase()
-
-  try {
-    const img = await import(`@/assets/images/files/${extension}.png`)
-    return img
-  } catch (error) {
-    console.error(`Image for extension ${extension} not found`, error)
-    return null
-  }
+const getExtension = (extension) => {
+  return new URL(`../../assets/images/files/${extension}.png`, import.meta.url).href
 }
 const getName = (name) => {
+  console.log(name)
   let newName = name.split('/')
   return newName[1]
+}
+const ByteToMb = (size) => {
+  let byteToMbNumber = Number(size / 1048576)
+  if (byteToMbNumber.toFixed(0) == 0) {
+    console.log(byteToMbNumber)
+    return Number(size / 1024).toFixed(2) + ' kb'
+  } else {
+    return byteToMbNumber.toFixed(2) + ' mb'
+  }
+}
+const deleteAttachment = () => {
+  axiosClient
+    .delete(`/task/deleteAttachment/${id_attach.value}`, {
+      headers: {
+        'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
+      }
+    })
+    .then((res) => {
+      task.attachments = task.attachments.filter((el) => el.id_attachment !== id_attach.value)
+      toast.info('Attachment delete by success!')
+      deleteDialog.value = false
+    })
 }
 </script>
 
@@ -253,37 +279,28 @@ const getName = (name) => {
     <div>
       <div class="flex items-center mb-2" v-for="attach in task.attachments">
         <div>
-          {{ attach }}
-          <img :src="attach.img" alt="" class="w-8 h-8" />
+          <img :src="getExtension(attach.img)" alt="" class="w-8 h-8" />
         </div>
         <div class="ml-2">
-          <a href="javascript::void" class="text-base hover:text-0-PRIMARY_NAVY">{{ test }}</a>
-          <p class="text-sm">{{ attach.size / 1024 }} ~ <button>Delete</button></p>
-        </div>
-      </div>
-    </div>
-    <!-- TODO: Comments -->
-    <h3 class="flex items-center space-x-2 mt-4">
-      <span><v-icon icon="mdi-comment"></v-icon></span><strong>Comments</strong>
-    </h3>
-    <div>
-      <Textarea rows="5" cols="30" class="block" />
-      <Button label="Add" class="my-2" />
-    </div>
-    <div class="flex">
-      <div>
-        <Avatar
-          image="https://primefaces.org/cdn/primevue/images/avatar/onyamalimba.png"
-          class="mr-2"
-          shape="circle"
-          v-bind="props"
-        />
-      </div>
-      <div>
-        <h5 class="font-bold">Zakaria Sdik</h5>
-        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quisquam, pariatur.</p>
-        <div class="text-sm">
-          <button>Like</button> - <button>Reply</button> - <button>Delete</button>
+          <a
+            :href="`${store.state.baseUrl}storage/${attach.name}`"
+            target="_blank"
+            class="text-sm text-0-PRIMARY_NAVY hover:text-0-PRIMARY_GREEN"
+            >{{ getName(attach.name) }}</a
+          >
+          <p class="text-sm">
+            {{ ByteToMb(attach.size) }} ~
+            <button
+              @click="
+                () => {
+                  deleteDialog = true
+                  id_attach = attach.id_attachment
+                }
+              "
+            >
+              Delete
+            </button>
+          </p>
         </div>
       </div>
     </div>
@@ -347,4 +364,16 @@ const getName = (name) => {
       </v-card-actions>
     </v-card>
   </v-dialog>
+  <Dialog
+    v-model:visible="deleteDialog"
+    modal
+    header="Delete attachment"
+    :style="{ width: '25rem' }"
+  >
+    <p>Would you like to delete this attachments?</p>
+    <template #footer>
+      <Button label="Cancel" text severity="secondary" @click="deleteDialog = false" autofocus />
+      <Button label="Delete" outlined severity="secondary" @click="deleteAttachment" autofocus />
+    </template>
+  </Dialog>
 </template>

@@ -7,51 +7,33 @@ let { isShowInMobile, displayMobile } = defineProps(['isShowInMobile', 'displayM
 let menus = ref([
   {
     text: 'Dashboard',
-    route: '/Dashboard',
+    route: '/',
     isActive: true,
     icon: 'mdi-view-dashboard'
   },
   {
     text: 'Projects',
-    route: '/Projects',
+    route: '/project',
     isActive: false,
     icon: 'mdi-atom-variant'
   },
   {
     text: 'Employees',
-    route: '/Employees',
+    route: '/employee',
     isActive: false,
     icon: 'mdi-account-supervisor'
   },
   {
     text: 'Clients',
-    route: '/Clients',
+    route: '/client',
     isActive: false,
     icon: 'mdi-account-tie'
   },
   {
     text: 'Tasks',
-    route: '/Tasks',
+    route: '/task',
     isActive: false,
     icon: 'mdi-calendar-check'
-  },
-  {
-    text: 'Invoices',
-    route: '/Invoices',
-    isActive: false,
-    icon: 'mdi-file-document-edit-outline'
-  },
-  {
-    text: 'Recordes',
-    route: '/Recordes',
-    isActive: false,
-    icon: 'mdi-record-circle'
-  },
-  {
-    text: 'Recruitement',
-    route: '/Recruitement',
-    isActive: false,
-    icon: 'mdi-briefcase'
   }
 ])
 </script>
@@ -72,10 +54,12 @@ let menus = ref([
             class="flex justify-between items-center relative line text-0-PRIMARY_NAVY p-4 hover:bg-0-PRIMARY_BLUE hover:text-0-PRIMARY_BLUE_LIGHT"
             v-for="menu in menus"
           >
-            <p class="flex items-center">
-              <v-icon :icon="menu.icon" size="medium"> </v-icon>
-              <span class="text-lg lg:text-sm ml-2">{{ menu.text }}</span>
-            </p>
+            <RouterLink :to="menu.route">
+              <p class="flex items-center">
+                <v-icon :icon="menu.icon" size="medium"> </v-icon>
+                <span class="text-lg lg:text-sm ml-2">{{ menu.text }}</span>
+              </p></RouterLink
+            >
           </li>
         </ul>
       </div>

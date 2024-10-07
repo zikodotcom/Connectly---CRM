@@ -3,6 +3,16 @@ import clients from '@/assets/images/dashboard/clients.png'
 import employees from '@/assets/images/dashboard/employees.png'
 import projects from '@/assets/images/dashboard/projects.png'
 import invoices from '@/assets/images/dashboard/invoices.png'
+import { onMounted, ref } from 'vue'
+import { axiosClient } from '@/axiosClient'
+
+const count = ref()
+// FETCH COUNTING
+onMounted(() => {
+  axiosClient.get('/counting').then((res) => {
+    count.value = res.data
+  })
+})
 </script>
 
 <template>
@@ -12,7 +22,7 @@ import invoices from '@/assets/images/dashboard/invoices.png'
       <div class="flex justify-between">
         <div>
           <p class="text-0-GREY_GREY_70 font-light">Total clients</p>
-          <p class="text-0-PRIMARY_NAVY text-lg font-bold">20000</p>
+          <p class="text-0-PRIMARY_NAVY text-lg font-bold">{{ count?.client }}</p>
         </div>
         <div>
           <img v-lazy="clients" alt="" />
@@ -24,7 +34,7 @@ import invoices from '@/assets/images/dashboard/invoices.png'
       <div class="flex justify-between">
         <div>
           <p class="text-0-GREY_GREY_70 font-light">Total employees</p>
-          <p class="text-0-PRIMARY_NAVY text-lg font-bold">200</p>
+          <p class="text-0-PRIMARY_NAVY text-lg font-bold">{{ count?.employee }}</p>
         </div>
         <div>
           <img v-lazy="employees" alt="" />
@@ -36,7 +46,7 @@ import invoices from '@/assets/images/dashboard/invoices.png'
       <div class="flex justify-between">
         <div>
           <p class="text-0-GREY_GREY_70 font-light">Total projects</p>
-          <p class="text-0-PRIMARY_NAVY text-lg font-bold">20000</p>
+          <p class="text-0-PRIMARY_NAVY text-lg font-bold">{{ count?.projects }}</p>
         </div>
         <div>
           <img v-lazy="projects" alt="" />
@@ -47,8 +57,8 @@ import invoices from '@/assets/images/dashboard/invoices.png'
     <div class="shadow-xl w-[100%] md:w-[22%] rounded-lg p-4">
       <div class="flex justify-between">
         <div>
-          <p class="text-0-GREY_GREY_70 font-light">Total invoices</p>
-          <p class="text-0-PRIMARY_NAVY text-lg font-bold">50</p>
+          <p class="text-0-GREY_GREY_70 font-light">Total project amount</p>
+          <p class="text-0-PRIMARY_NAVY text-lg font-bold">${{ count?.amount }}</p>
         </div>
         <div>
           <img v-lazy="invoices" alt="" />

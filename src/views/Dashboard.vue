@@ -2,6 +2,8 @@
 import CounterDashboard from '@/components/Dashboard/CounterDashboard.vue'
 import Charts from '@/components/Dashboard/Charts.vue'
 import ListClients from '@/components/Dashboard/ListClients.vue'
+import { store } from '@/store/store'
+import ListEmployee from '@/components/Dashboard/ListEmployee.vue'
 </script>
 
 <template>
@@ -9,6 +11,6 @@ import ListClients from '@/components/Dashboard/ListClients.vue'
   <div class="flex space-x-4 p-4">
     <Charts />
     <ListClients />
-    <ListClients />
+    <ListEmployee />
   </div>
 </template>
